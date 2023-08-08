@@ -1,32 +1,32 @@
 AddressError:
-		__ErrorMessage "SUB: ADDRESS ERROR", _eh_show_sr_usp|_eh_address_error
+		__ErrorMessage "SUB CPU: ADDRESS ERROR", _eh_show_sr_usp|_eh_address_error
 
 IllegalInstr:
-		__ErrorMessage "SUB: ILLEGAL INSTRUCTION", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: ILLEGAL INSTRUCTION", _eh_show_sr_usp
 
 ZeroDivide:
-		__ErrorMessage "SUB: ZERO DIVIDE", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: ZERO DIVIDE", _eh_show_sr_usp
 
 ChkInstr:
-		__ErrorMessage "SUB: CHK INSTRUCTION", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: CHK INSTRUCTION", _eh_show_sr_usp
 
 TrapvInstr:
-		__ErrorMessage "SUB: TRAPV INSTRUCTION", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: TRAPV INSTRUCTION", _eh_show_sr_usp
 
 PrivilegeViol:
-		__ErrorMessage "SUB: PRIVILEGE VIOLATION", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: PRIVILEGE VIOLATION", _eh_show_sr_usp
 
 Trace:
-		__ErrorMessage "SUB: TRACE", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: TRACE", _eh_show_sr_usp
 
 Line1010Emu:
-		__ErrorMessage "SUB: LINE 1010 EMULATOR", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: LINE 1010 EMULATOR", _eh_show_sr_usp
 
 Line1111Emu:
-		__ErrorMessage "SUB: LINE 1111 EMULATOR", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: LINE 1111 EMULATOR", _eh_show_sr_usp
 
 ErrorExcept:
-		__ErrorMessage "SUB: ERROR EXCEPTION", _eh_show_sr_usp
+		__ErrorMessage "SUB CPU: ERROR EXCEPTION", _eh_show_sr_usp
 		
 ErrorHandler:
 		move	#$2700,sr				; disable all interrupts
@@ -41,7 +41,6 @@ ErrorHandler:
 		
 		; Main CPU has noticed
 		move.l	sp,(mcd_subcom_0).w	; get address of bottom of stack (including dumped registers) for main CPU
-		;move.l	(program_ram).w,(mcd_subcom_2).w	; get head of sub CPU stack
 		clr.b	(mcd_sub_flag).w ; clear flag to let main CPU know we are done
 		bra.s	*	; stay here forever
 
