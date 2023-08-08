@@ -7,16 +7,15 @@
 ; ---------------------------------------------------------------------------
 
 program_ram:		equ	0 ; Mega CD Program RAM
+sp_start:			equ $6000	; start of user program in program RAM
 program_ram_end:	equ	$80000	; MCD PRG-RAM end
 
 word_ram:			equ $80000 ; Mega CD Word RAM
 word_ram_2M:		equ	word_ram	; MCD Word RAM start (2M)
 word_ram_2M_end:	equ	$C0000	; MCD Word RAM end (2M)
 
-word_ram_1M:		equ	$C0000	; MCD Word RAM start (1M/1M)
-word_ram_1M_end:	equ	$E0000	; MCD Word RAM end (1M/1M)
-
-; Equates for the PCM chip are in Sound/Sound Equates (PCM).asm
+;word_ram_1M:		equ	$C0000	; MCD Word RAM start (1M/1M)
+;word_ram_1M_end:	equ	$E0000	; MCD Word RAM end (1M/1M)
 
 ; Backup RAM
 backup_ram:			equ	$FE0000	; Mega CD backup RAM (only odd bytes accessible)
@@ -40,7 +39,7 @@ mcd_mem_mode:		equ $FFFF8003 ; word ram mode/swap and priority mode registers; f
 	bank_swap_request_bit:	equ 1	; DMNA; read-only; returns 1 while swap is in progress and 0 once it is complete
 	; 2M mode:	
 	wordram_swapmain_bit:	equ 0	; RET; give word RAM to main CPU by setting to 1; returns 0 while swap is in progress and 1 once it is complete
-	wordram_swapsub_bit:	equ 1	; DMNA; read-only, returns 0 while swap is in progress and 1 once it is complete
+	wordram_swapsub_bit:	equ 1	; DMNA; read-only, 0 = word RAM is assigned to main CPU; 1 = word RAM is assigned to sub CPU
 	
 	wordram_mode_bit:		equ 2	; MODE; 0 = 2M mode, 1 = 1M mode
 	
@@ -64,7 +63,7 @@ mcd_cd_controller_mode:		equ $FFFF8004; CD data controller mode and destination 
 	data_end_bit:		equ 7	; set once the data read is finished
 	
 mcd_cdc_rs0:		equ	$FFFF8005 ; CD data controller control registers; BIOS use only
-; $FFFF0006 unused
+					; 	$FFFF0006 unused
 mcd_cdc_rs1:		equ	$FFFF8007 ; CD data controller control registers; BIOS use only
 
 mcd_cdc_data:		equ	$FFFF8008 ; CD data out for sub CPU read
@@ -163,7 +162,7 @@ gfx_fontgen_color:	equ	$FFFF804C ; font color (only low byte is used, so could b
 gfx_fontgen_in:		equ	$FFFF804E 	; font source bitmap input
 gfx_fontgen_out:	equ	$FFFF8050 	; finished font data, 8 bytes
 
-; Graphics transformation control registers
+; Graphics operation control registers
 gfx_stampsize:	equ	$FFFF8058 	; stamp size/Map size
 	stampmap_repeat_bit:	equ 0 ; 0 = repeat when end of map is reached, 1 = 0 data beyond map size is set to 0
 	stamp_size_bit:			equ 1 ; 0 = 16x16 pixels, 1 = 32x32 pixels
@@ -187,8 +186,7 @@ gfx_img_vsize: 	equ	$FFFF8064 	; image buffer height in pixels
 
 gfx_tracetbl:	equ	$FFFF8066 	; trace vector base address (writing this also triggers the start of a graphics operation)
 
-; Subcode registers
-; User access prohibited.
+; Subcode registers; BIOS use only
 mcd_subcode_addr:	equ	$FFFF8068 	; subcode top address
 mcd_subcode:		equ	$FFFF8100 	; 64 word subcode buffer
 mcd_subcode_mirror:	equ	$FFFF8108  	; mirror of subcode buffer
@@ -197,7 +195,7 @@ mcd_subcode_mirror:	equ	$FFFF8108  	; mirror of subcode buffer
 ; BIOS status flags and jump table
 ; -------------------------------------------------------------------------
 
-SubCPUStack:	equ $5E80 ; default head of the sub CPU's stack
+_SubCPUStack:	equ $5E80 ; default head of the sub CPU's stack
 
 ; BIOS status table and flags
 _BIOSStatus:	equ	$5E80	; _CDSTAT; CD BIOS status; after calling the BIOSStatus function, contains information on what the BIOS and CD drive are currently doing
@@ -205,7 +203,7 @@ _BootStatus:	equ	$5EA0	; boot status
 _UserMode:		equ	$5EA6	; system program return code
 
 ; BIOS call entry points
-_SetJmpTbl:		equ	$5F0A	; set up a module
+_SetJmpTbl:		equ	$5F0A	; set up the jump table for a new sub CPU user program
 _WaitForVBlank:	equ	$5F10	; _WAITVSYNC; wait for next MDInt
 _BackupRAM:		equ	$5F16	; backup RAM function entry
 _CDBoot:		equ	$5F1C	; CD boot function entry
@@ -215,7 +213,7 @@ _CDBIOS:		equ	$5F22	; CD BIOS function entry
 _UserInit:		equ	$5F28	; _USERCALL0; user initialization code
 _UserMain:		equ	$5F2E	; _USERCALL1; user program main entry point	
 _UserVBlank:	equ	$5F34	; _USERCALL2; user VBlank routine
-_UserCall3:		equ	$5F3A	; user-defined call, not used by BIOS
+_UserCall3:		equ	$5F3A	; _USERCALL3; user-defined call, not used by BIOS
 
 ; Exception vectors
 _AddressError:	equ	$5F40	; _ADRERR; address error exception
@@ -259,15 +257,20 @@ _Trap15:		equ	$5FFA
 ; BIOS function calls
 
 ; Except for the boot and BURAM commands, these are used with the _CDBIOS 
-; entry point. The descriptions are intended as an at-a-glace summary of 
-; what each does. See the MEGA CD BIOS manual for a more complete 
-; explanation of each function.
+; entry point. Command IDs below $80 are executed in full on the spot; 
+; command IDs $80 and above are queued and executed during CDD, CDC, and 
+; subcode interrupts.
+
+; The descriptions are intended as an at-a-glace summary. See the MEGA CD 
+; BIOS manual for more complete explanations of each function and their 
+; usage. A copy can be obtained here: 
+; https://segaretro.org/images/archive/4/44/20190509114241%21MCDBios.pdf
 ; -------------------------------------------------------------------------
 
 ; CD boot commands
-; Used with _CDBoot entry point
+; Used with _CDBoot entry point; for debugging use only
 BootInit:		equ	0 ; CBTINIT; initialize the boot system
-BootInt:		equ	1 ; CBTINT; call the interrupt manager	
+BootInt:		equ	1 ; CBTINT; call the interrupt manager (should be done as part of the user VBlank routine while CD Boot system is active)
 BootDiscOpen:	equ	2 ; CBTOPENDISC; same function as DriveOpen
 BootOpenStat:	equ	3 ; CBTOPENSTAT; check whether a call to BootDiscOpen has completed
 BootChkDisc:	equ	4 ; CBTCHKDISC; check whether a boot can be done or not
@@ -292,34 +295,34 @@ MusicPauseOff:		equ	4	; MSCPAUSEOFF:	resume CD audio
 MusicScanForward:	equ	5	; MSCSCANFF: fast forward CD audio
 MusicScanBackward:	equ	6	; MSCSCANFR: rewind CD audio
 MusicScanOff:		equ	7	; MSCSCANOFF: cancel fast forward or rewind and return to normal playback
-MusicPlay:			equ	$11	; MSCPLAY; play CD audio starting from a designated track and continuing through
+MusicPlay:			equ	$11	; MSCPLAY; play CD audio starting from a designated track and continuing through entire disc
 MusicPlayOnce:		equ	$12	; MSCPLAY1; play a CD track once
 MusicPlayRepeat:	equ	$13	; MSCPLAYR:	play a CD track on loop
 MusicPlayAtTime:	equ	$14	; MSCPLAYT;	queue a CD track and play it at a designated time
 MusicSeek:			equ	$15	; MSCSEEK; stop CD playback upon reaching a specific track
 MusicSeekTime:		equ	$16 ; MSCSEEKT; stop CD playback at a specific time
-MusicSeekPlayOnce:	equ	$19	; MSCSEEK1; stop CD playback after playing a specific track
+MusicSeekPlayOnce:	equ	$19	; MSCSEEK1; stop CD playback after reaching a specific track
 FaderSet:			equ	$85 ; FDRSET; set CD audio volume
 FaderChg:			equ	$86 ; FDRGHG; change CD audio volume at a specified speed
 
 ; Drive control commands
-DriveOpen:	equ	$A	; DRVOPEN; if an MCD Model 1 or Pioneer LaserActive (Mega LD), open the disc tray; otherwise wait for user to open drive door
-DriveInit:	equ	$10	; DRVINIT; check for disc; if disc is found, read TOC data, and optionally start playing music automatically
+DriveOpen:	equ	$A	; DRVOPEN; open the disc tray if an MCD Model 1 or Pioneer LaserActive (Mega LD), otherwise wait for user to open drive door
+DriveInit:	equ	$10	; DRVINIT; close the disc tray if an MCD Model 1 or Pioneer LaserActive, and check for disc; if found, get TOC data and optionally start playing music automatically
 
-; CD-ROM read commands
+; CD data read commands
 ROMPauseOn:		equ	8	; ROMPAUSEON; pause a CD data read
 ROMPauseOff:	equ	9	; ROMPAUSEOFF; resume CD data read
 ROMRead:		equ	$17 ; ROMREAD; begin CD data read from a specific logical sector
 ROMSeek:		equ	$18	; ROMSEEK; stop CD data read at a specific logical sector
-ROMReadNum:		equ	$20 ; ROMREADN; begin CD data read from a specific logical sector and read a specific number of sectors
+ROMReadNum:		equ	$20 ; ROMREADN; begin CD data read at a specific logical sector and read a specific number of sectors
 ROMReadBetween:	equ	$21	; ROMREADE; perform CD data read between two designated logical sectors
 
 ; CD data decoder commands
 DecoderStart:		equ	$87	; CDCSTART: begin data readout from current logical sector 
 DecoderStartP:		equ	$88 ; CDCSTARTP
-DecoderStop:		equ	$89	; CDCSTOP; stop read and throw out current sector
-DecoderStatus:		equ	$8A	; CDCSTAT; check if data is read
-DecoderRead:		equ	$8B ; CDCREAD; if data is read prepare to read one frame
+DecoderStop:		equ	$89	; CDCSTOP; terminate read and discard current sector
+DecoderStatus:		equ	$8A	; CDCSTAT; check if data is ready
+DecoderRead:		equ	$8B ; CDCREAD; if data is ready, prepare to read one frame
 DecoderTransfer:	equ	$8C ; CDCTRN; transfer data from mcd_cdc_data to a location in the Sub CPU's address space
 DecoderAck:			equ	$8D	; CDCACK; let the decoder know we are done reading a frame
 
@@ -329,7 +332,7 @@ SubcodeStart:		equ	$8F ; SCDSTART; begin reading subcode
 SubcodeStop:		equ	$90 ; SCDSTOP; stop subcode read
 SubcodeStatus:		equ	$91 ; SCDSTAT; get error status of subcode system
 SubcodeReadRW:		equ	$92 ; SCDREAD; read R and W codes from subcode
-SubcodeReadPQ:		equ	$93 ; SCDPQ; retrive P and Q codes from subcode
+SubcodeReadPQ:		equ	$93 ; SCDPQ; retrive P and Q codes from subcode (WARNING: THIS FUNCTION IS BROKEN IN ALL NORTH AMERICAN MODELS!)
 SubcodeLastPQ:		equ	$94 ; SCDPQL; get the last P and Q codes
 
 ; Misc BIOS commands
