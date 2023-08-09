@@ -43,16 +43,17 @@ mcd_mem_mode:		equ $FFFF8003 ; word ram mode/swap and priority mode registers; f
 	
 	wordram_mode_bit:		equ 2	; MODE; 0 = 2M mode, 1 = 1M mode
 	
-	priority_underwrite_bit:	equ 3	; enable underwrite mode
-	priority_overwrite_bit:		equ 4	; enable overwrite mode
+	priority_underwrite_bit:	equ 3	; enables underwrite mode; data output from GFX ops will not overwrite blank pixels already in the image buffer, effectively rendering under the previous data
+	priority_overwrite_bit:		equ 4	; enables overwrite mode; non-blank pixels output from GFX ops will write over existing data in image buffer, effectively rendering over the previous data
+	priority_disabled:			equ 0 	; priority mode disabled; all data output from GFX ops is written
 	priority_underwrite:		equ 1<<priority_underwrite_bit
 	priority_overwrite:			equ 1<<priority_overwrite_bit	
 	
 	prgram_bank_bits:			equ $C0	; bits 6 and 7		 
 	
-mcd_cd_controller_mode:		equ $FFFF8004; CD data controller mode and destination select register
+mcd_cd_controller_mode:		equ $FFFF8004; CD data decoder mode and destination select register
 	cd_destination:		equ 7	; bits 0-2, destination of CD data read
-		cd_dest_main:		equ	2	; main CPU read from mcd_cdc_data
+		cd_dest_main:		equ	2	; main CPU read from its instance of mcd_cdc_data
 		cd_dest_sub:		equ 3	; sub CPU read from mcd_cdc_data
 		cd_dest_pcm:		equ 4	; DMA to PCM waveram
 		cd_dest_prgram:		equ 5	; DMA to program RAM
@@ -62,13 +63,13 @@ mcd_cd_controller_mode:		equ $FFFF8004; CD data controller mode and destination 
 	data_ready_bit:		equ 6	; set once full word of data is ready
 	data_end_bit:		equ 7	; set once the data read is finished
 	
-mcd_cdc_rs0:		equ	$FFFF8005 ; CD data controller control registers; BIOS use only
+mcd_cdc_rs0:		equ	$FFFF8005 ; CD data decoder control registers; BIOS use only
 					; 	$FFFF0006 unused
-mcd_cdc_rs1:		equ	$FFFF8007 ; CD data controller control registers; BIOS use only
+mcd_cdc_rs1:		equ	$FFFF8007 ; CD data decoder control registers; BIOS use only
 
 mcd_cdc_data:		equ	$FFFF8008 ; CD data out for sub CPU read
 mcd_cdc_dma_dest:	equ	$FFFF800A ; CDC DMA destination address
-	; bits 0-9 used for PCM sound source
+	; bits 0-9 used for PCM waveram
 	; bits 0-$D used for word RAM
 	; all bits used for program RAM
 mcd_stopwatch:		equ	$FFFF800C ; 12-bit timer
@@ -164,7 +165,7 @@ gfx_fontgen_out:	equ	$FFFF8050 	; finished font data, 8 bytes
 
 ; Graphics operation control registers
 gfx_stampsize:	equ	$FFFF8058 	; stamp size/Map size
-	stampmap_repeat_bit:	equ 0 ; 0 = repeat when end of map is reached, 1 = 0 data beyond map size is set to 0
+	stampmap_repeat_bit:	equ 0 ; 0 = repeat when end of map is reached, 1 = 0 data beyond map size is rendered as blank pixels
 	stamp_size_bit:			equ 1 ; 0 = 16x16 pixels, 1 = 32x32 pixels
 	stampmap_size_bit:		equ 2 ; 0 = 1x1 screen (256x256 pixels), 1 = 16x16 screen (4096x4096 pixels) 
 
@@ -174,17 +175,19 @@ gfx_stampsize:	equ	$FFFF8058 	; stamp size/Map size
 	stampmap_size_256x256:		equ 0
 	stampmap_size_4096x4096:	equ 1<<stampmap_size_bit
 	
-gfx_stampmap:	equ	$FFFF805A 	; base address of stamp map, expressed as offset relative to start of 2M word RAM
-	; todo; what are the limitations on starting offsets?
-	
-gfx_bufheight:	equ	$FFFF805C 	; image buffer height in tiles, 0-32
-
-gfx_imgstart:	equ	$FFFF805E 	; image buffer start address
-gfx_imgoffset:	equ	$FFFF8060 	; image buffer offset
-gfx_img_hsize:	equ	$FFFF8062 	; image buffer width in pixels
-gfx_img_vsize: 	equ	$FFFF8064 	; image buffer height in pixels
-
-gfx_tracetbl:	equ	$FFFF8066 	; trace vector base address (writing this also triggers the start of a graphics operation)
+gfx_stampmap:	equ	$FFFF805A 	; start address of stamp map, expressed as offset relative to start of 2M word RAM divided by 4
+	; Start offsets are limited to certain addresses as follows:
+	; stamp_size_16x16|stampmap_size_256x256 = multiples of $200
+	; stamp_size_32x32|stampmap_size_256x256 = multiples of $80
+	; stamp_size_16x16|stampmap_size_4096x4096 = multiples of $20000	
+	; stamp_size_32x32|stampmap_size_4096x4096 = multiples of $8000
+		
+gfx_bufheight:	equ	$FFFF805C 	; image buffer height in tiles - 1 , maximum height is 32 tiles
+gfx_imgstart:	equ	$FFFF805E 	; image buffer start address; same restrictions on location apply as with stampmaps
+gfx_imgoffset:	equ	$FFFF8060 	; specifies an optional offset of up to 7 pixels on each axis, bits 0-2 horizontal, bits 3-5 vertical
+gfx_img_hsize:	equ	$FFFF8062 	; image buffer width in pixels, maximum 511 pixels
+gfx_img_vsize: 	equ	$FFFF8064 	; image buffer height in pixels, maximum 255 pixels
+gfx_tracetbl:	equ	$FFFF8066 	; start address of trace vector table;  same restrictions on location apply as with stampmaps (writing this also triggers the start of a graphics operation)
 
 ; Subcode registers; BIOS use only
 mcd_subcode_addr:	equ	$FFFF8068 	; subcode top address
@@ -195,11 +198,11 @@ mcd_subcode_mirror:	equ	$FFFF8108  	; mirror of subcode buffer
 ; BIOS status flags and jump table
 ; -------------------------------------------------------------------------
 
-_SubCPUStack:	equ $5E80 ; default head of the sub CPU's stack
+_SubCPUStack:	equ $5E80 ; sub CPU initial stack pointer
 
 ; BIOS status table and flags
 _BIOSStatus:	equ	$5E80	; _CDSTAT; CD BIOS status; after calling the BIOSStatus function, contains information on what the BIOS and CD drive are currently doing
-_BootStatus:	equ	$5EA0	; boot status
+_BootStatus:	equ	$5EA0	; boot system status
 _UserMode:		equ	$5EA6	; system program return code
 
 ; BIOS call entry points

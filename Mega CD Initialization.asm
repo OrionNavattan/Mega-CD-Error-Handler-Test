@@ -60,7 +60,7 @@ EntryPoint:
 		dbf	d5,.psg_loop				; repeat for all channels
 
 		btst	#console_mcd_bit,d6	; is there anything in the expansion slot?
-		bne.w	InitFailure1			; branch if not
+		bne.w	InitFailure1		; branch if not
 
 ;FindMCDBIOS:			
 		cmpi.l	#"SEGA",cd_bios_signature-cd_bios(a4)	; is the "SEGA" signature present?
@@ -69,14 +69,14 @@ EntryPoint:
 		bne.w	InitFailure1					; if not, branch
 
 		; Determine which MEGA CD device is attached.
-		movea.l	a0,a1				; a1 & a2 = pointer index to BIOS data
+		movea.l	a0,a1				; a1 & a2 = pointers to BIOS data
 		movea.l a0,a2
 		moveq	#(sizeof_MCDBIOSList/2)-1,d0
 		moveq	#id_MCDBIOS_JP1,d7		; first BIOS ID
 
 	.findloop:
 		adda.w	(a2)+,a1			; a1 = pointer to BIOS data
-		addq	#4,a1					; skip over BIOS payload address
+		addq.w	#4,a1					; skip over BIOS payload address
 		lea	cd_bios_name-cd_bios(a4),a6			; get BIOS name
 
 	.checkname:
@@ -94,7 +94,7 @@ EntryPoint:
 
 	.nextBIOS:
 		addq.b	#1,d7				; increment BIOS ID 
-		movea.l	a0,a1				; restore a1
+		movea.l	a0,a1				; reset a1
 		dbf	d0,.findloop			; loop until all BIOSes are checked
 
 	.notfound:
@@ -108,19 +108,17 @@ BIOS_Found:
 		move.b	d2,port_1_control-mcd_mem_mode(a3)	; initialize port 1
 		move.b	d2,port_2_control-mcd_mem_mode(a3)	; initialize port 2
 		move.b	d2,port_e_control-mcd_mem_mode(a3)	; initialize port e
-		
-		move.w	#$FF00,(mcd_write_protect).l	; $A12002
-		move.b	#3,(mcd_reset).l				; $A12001
-		move.b	#2,(mcd_reset).l				; $A12001
-		move.b	#0,(mcd_reset).l				; $A12001
 
-;		move.w	#$FF00,mcd_write_protect-mcd_mem_mode(a3)		; reset the sub CPU's gate array
-;		move.b	#3,mcd_reset-mcd_mem_mode(a3)					; these four instructions in this specific sequence trigger the reset
-;		move.b	#2,mcd_reset-mcd_mem_mode(a3)
-;		move.b	#0,mcd_reset-mcd_mem_mode(a3)
+		move.w	#$FF00,mcd_write_protect-mcd_mem_mode(a3)	; reset the sub CPU gate array
+		move.b	#3,mcd_reset-mcd_mem_mode(a3)				; these four values written to these address in this order trigger the reset
+		move.b	#2,mcd_reset-mcd_mem_mode(a3)
+		move.b	#0,mcd_reset-mcd_mem_mode(a3)
 
 		moveq	#$80-1,d2			; wait for gate array reset to complete
 		dbf	d2,*
+		
+		; If you're loading a Z80 sound driver, this is the place to do it, replacing
+		; the above two lines.
 	
 	.req_bus:
 		bset	#sub_bus_request_bit,mcd_reset-mcd_mem_mode(a3)	; request sub CPU bus
@@ -176,11 +174,12 @@ BIOS_Found:
 		move.b	(a3),d6			; get current bank setting
 		andi.b	#(~program_ram_bank)&$FF,d6		; set program ram bank to 0
 		move.b	d6,(a3)	
+		
 		lea	(program_ram).l,a1		; start of program RAM
 		move.b	(v_bios_id).w,d4	; get BIOS ID
 		add.w	d4,d4				; make index		
-		lea MCDBIOSList(pc),a0	; IDs start at 1
-		move.w	-2(a0,d4.w),d1
+		lea MCDBIOSList(pc),a0
+		move.w	-2(a0,d4.w),d1	; -2 since IDs start at 1
 		movea.l	(a0,d1.w),a0	; a0 = start of compressed BIOS payload
 
 		bsr.w	KosDec					; decompress the sub CPU BIOS (uses a0, a1, a4, a5)
@@ -281,31 +280,31 @@ MCDBIOSList:	index *,1
 
 MCDBIOS_JP1:
 		dc.l	$416000
-		dc.b	"MEGA-CD BOOT ROM",0		; Japanese MCD Model 1
+		dc.b	"MEGA-CD BOOT ROM",0		; Japanese Model 1
 		dc.b	"J"
 		even
 
 MCDBIOS_US1:
 		dc.l	$415800
-		dc.b	"SEGA-CD BOOT ROM",0		; North American SCD Model 1
+		dc.b	"SEGA-CD BOOT ROM",0		; North American Model 1
 		dc.b	0
 		even
 
 MCDBIOS_EU1:
 		dc.l	$415800
-		dc.b	"MEGA-CD BOOT ROM",0		; PAL MCD Model 1
+		dc.b	"MEGA-CD BOOT ROM",0		; PAL Model 1
 		dc.b	"E"
 		even
 
 MCDBIOS_CD2:
 		dc.l	$416000
-		dc.b	"CD2 BOOT ROM    ",0		; All MCD/SCD Model 2s and Aiwa Mega-CD
+		dc.b	"CD2 BOOT ROM    ",0		; All Model 2s, Aiwa Mega-CD
 		dc.b	0
 		even
 
 MCDBIOS_CDX:
 		dc.l	$416000
-		dc.b	"CDX BOOT ROM    ",0		; Sega MultiMega and CDX
+		dc.b	"CDX BOOT ROM    ",0		; MultiMega, CDX
 		dc.b	0
 		even
 
@@ -317,12 +316,12 @@ MCDBIOS_LaserActive:
 
 MCDBIOS_Wondermega1:
 		dc.l	$416000
-		dc.b	"WONDER-MEGA BOOTROM",0	; Victor WonderMega 1 and Sega WonderMega
+		dc.b	"WONDER-MEGA BOOTROM",0		; Victor WonderMega 1, Sega WonderMega
 		dc.b	0
 		even
 
 MCDBIOS_Wondermega2:
 		dc.l	$416000
-		dc.b	"WONDERMEGA2 BOOTROM",0	; Victor WonderMega 2 and JVC X'Eye
+		dc.b	"WONDERMEGA2 BOOTROM",0		; Victor WonderMega 2, JVC X'Eye
 		dc.b	0
 		even
