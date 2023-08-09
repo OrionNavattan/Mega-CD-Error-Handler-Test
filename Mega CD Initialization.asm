@@ -130,7 +130,7 @@ BIOS_Found:
 		
 ;ClearPrgRAM:
 		; Clear the program RAM.
-		move.b	#0,mcd_write_protect-mcd_mem_mode(a3)			; disable write protect on Sub CPU memory
+		clr.b	mcd_write_protect-mcd_mem_mode(a3)			; disable write protect on Sub CPU memory
 		move.b	(a3),d6			; get current bank setting
 		andi.b	#(~program_ram_bank)&$FF,d6		; set program ram bank to 0
 		move.b	d6,(a3)

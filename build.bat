@@ -10,7 +10,7 @@ echo Compressing Sub CPU program.
 
 IF NOT EXIST "Sub CPU Program.kosm" PAUSE & EXIT 2
 
-"asm68k.exe" /m /k /p "Mode 1 Error Handler Test.asm", "Mode 1 Error Handler Test.bin" >errors2.txt, "Mode 1 Error Handler Test.sym", "Mode 1 Error Handler Test.lst"
+"asm68k.exe" /m /k /p "Mode 1 Template.asm", "Mode 1 Template.bin" >errors2.txt, "Mode 1 Template.sym", "Mode 1 Template.lst"
 type errors2.txt
 
 pause

@@ -51,8 +51,6 @@ Init:
 		
 Main:
 		addq.w #4,sp	; throw away return address to BIOS code, as we will not be returning there
-		;illegal		; trigger illegal instruction exception
-		;move.w 1(a0),d0	; crash the CPU with word operation at odd address
 		move.b	#'R',(mcd_subcom_0).w	; signal success
 		bra.s	*
 		

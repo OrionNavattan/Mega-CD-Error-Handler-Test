@@ -92,23 +92,9 @@ MainLoop:
 		cmpi.b	#'R',(mcd_subcom_0).l	; is sub CPU done initializing?	
 		bne.s	MainLoop				; branch if not
 		
-		move.l (mcd_subcom_2).l,-(sp)
-		
-		move.w	#$FF00,mcd_write_protect-mcd_mem_mode(a3)		; reset the sub CPU's gate array
-		move.b	#3,mcd_reset-mcd_mem_mode(a3)					; these four values written to these address trigger the reset
-		move.b	#2,mcd_reset-mcd_mem_mode(a3)
-		move.b	#0,mcd_reset-mcd_mem_mode(a3)
-
-		moveq	#$80-1,d2			; wait for gate array reset to complete
-		dbf	d2,*
-		
-		move.l (mcd_subcom_2).l,-(sp)
-		
-		illegal			; trigger illegal instruction exception
-		;move.w 1(a0),d0	; crash the CPU with word operation at odd address 
-		
+		; At this point, both CPUs are ready. Continue with your main program from here.
 		move.w	#cGreen,(vdp_data_port).l	; signal success
-		bra.s *
+		bra.s *								; stay here forever
 		
 VBlank:
 		bset #mcd_int_bit,(mcd_md_interrupt).l	; trigger VBlank on sub CPU
