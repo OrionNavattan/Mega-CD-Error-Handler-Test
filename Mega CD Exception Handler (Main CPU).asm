@@ -120,7 +120,7 @@ SubCPUError:
 
 	.waitsub:
 		tst.b	(mcd_sub_flag).l	; is the sub CPU done?
-		beq.s	.waitsub			; if not, branch	
+		bne.s	.waitsub			; if not, branch	
 		
 	.waitsubbus:	
 		bset	#sub_bus_request_bit,(mcd_reset).l			; request the sub CPU bus
