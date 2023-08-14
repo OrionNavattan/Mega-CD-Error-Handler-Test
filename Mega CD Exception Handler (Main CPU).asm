@@ -43,6 +43,9 @@ Line1111Emu:
 
 ErrorExcept:
 	__ErrorMessage "MAIN CPU: ERROR EXCEPTION", _eh_show_sr_usp
+	
+SubCPUTimeout:
+	__ErrorMessage "MAIN CPU: TIMED OUT WAITING FOR SUB CPU", _eh_show_sr_usp	
 
 
 ; ---------------------------------------------------------------
@@ -122,10 +125,14 @@ SubCPUError:
 		tst.b	(mcd_sub_flag).l	; is the sub CPU done?
 		bne.s	.waitsub			; if not, branch	
 		
+		move.w	#$100-1,d0	; maximum time to wait for response
 	.waitsubbus:	
 		bset	#sub_bus_request_bit,(mcd_reset).l			; request the sub CPU bus
-		beq.s	.waitsubbus					; if it has not been granted, wait
+		bne.s	.granted									; branch if it has been granted
+		dbeq	d0,.waitsubbus							; if it has not been granted, wait
+		trap #1							; if we've timed out				
 		
+	.granted:	
 		lea	-sizeof_Console_RAM(sp),sp		; allocate memory for console on main CPU stack
 		jsr	ErrorHandler_SetupVDP(pc)
 		

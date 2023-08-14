@@ -119,11 +119,14 @@ BIOS_Found:
 		
 		; If you're loading a Z80 sound driver, this is the place to do it, replacing
 		; the above two lines.
-	
-	.req_bus:
-		bset	#sub_bus_request_bit,mcd_reset-mcd_mem_mode(a3)	; request sub CPU bus
-		beq.s	.req_bus			; wait for bus request to complete
 		
+		move.w	#$100-1,d2	; maximum time to wait for response
+	.req_bus:	
+		bset	#sub_bus_request_bit,mcd_reset-mcd_mem_mode(a3)			; request the sub CPU bus
+		bne.s	.reset									; branch if it has been granted
+		dbeq	d2,.req_bus							; if it has not been granted, wait
+		trap #1							; if sub CPU is unresponsive				
+				
 	.reset:
 		bclr	#sub_reset_bit,mcd_reset-mcd_mem_mode(a3)		; set sub CPU to reset
 		bne.s	.reset			; wait for completion			
