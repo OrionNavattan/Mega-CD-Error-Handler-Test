@@ -189,8 +189,9 @@ mcd_md_interrupt:	equ	mcd_control_registers		; $A12000 ; MD interrupt, triggers 
 mcd_reset:				equ	$A12001		; $A12001 ; Sub CPU bus request and reset 
 	sub_reset_bit:			equ 0		; set to 0 to reset sub CPU, 1 to run
 	sub_bus_request_bit:	equ 1		; set to 1 to request sub CPU bus, 0 to return, when read, returns 1 once bus has been granted
-	sub_reset:				equ 1<<sub_reset_bit		; reset sub CPU, 1 to run
-	sub_bus_request:		equ 1<<sub_bus_request_bit	; set to 1 to request sub CPU bus, 0 to return, when read, returns 1 once bus has been granted
+	sub_reset:				equ 0
+	sub_run:				equ 1<<sub_reset_bit
+	sub_bus_request:		equ 1<<sub_bus_request_bit
 mcd_write_protect:	equ	$A12002 ; write protection; enable write protection for program RAM addresses 0-$FEFF in $100 byte increments
 mcd_mem_mode:		equ	$A12003 ; word RAM swap and program RAM bankswitch registers; first two bits have different meanings depending on 1M or 2M mode
 	; 1M mode:
