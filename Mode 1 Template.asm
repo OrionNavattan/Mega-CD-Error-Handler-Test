@@ -61,8 +61,8 @@ Vectors:
 Header:
 		dc.b "SEGA GENESIS    "		; Hardware system ID (Console name)
 		dc.b "ORIONNA 2023.AUG"				; Copyright holder and release date
-		dc.b "ORION'S MODE 1 ERROR HANDLER TEST               " ; Domestic name
-		dc.b "ORION'S MODE 1 ERROR HANDLER TEST               " ; International name
+		dc.b "ORION'S MODE 1 TEMPLATE                         " ; Domestic name
+		dc.b "ORION'S MODE 1 TEMPLATE                         " ; International name
 
 
 		dc.b "FFFFFFFFFFFFFF"				; Serial/version number (Rev non-0)

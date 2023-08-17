@@ -46,8 +46,7 @@ Init:
 		dc.l PrivilegeViol
 		dc.l Trace
 		dc.l Line1010Emu
-		dc.l Line1111Emu
-		dc.l ErrorExcept		
+		dc.l Line1111Emu		
 		
 Main:
 		addq.w #4,sp	; throw away return address to BIOS code, as we will not be returning there

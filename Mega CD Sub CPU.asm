@@ -49,9 +49,9 @@ mcd_mem_mode:		equ $FFFF8003 ; word ram mode/swap and priority mode registers; f
 	priority_underwrite:		equ 1<<priority_underwrite_bit
 	priority_overwrite:			equ 1<<priority_overwrite_bit	
 	
-	prgram_bank_bits:			equ $C0	; bits 6 and 7		 
+	program_ram_bank:			equ $C0	; bits 6 and 7		 
 	
-mcd_cd_controller_mode:		equ $FFFF8004; CD data decoder mode and destination select register
+mcd_cd_controller_mode:		equ $FFFF8004	; CD data decoder mode and destination select register
 	cd_destination:		equ 7	; bits 0-2, destination of CD data read
 		cd_dest_main:		equ	2	; main CPU read from its instance of mcd_cdc_data
 		cd_dest_sub:		equ 3	; sub CPU read from mcd_cdc_data
@@ -116,7 +116,7 @@ mcd_subcom_7_lo:	equ $FFFF802F ; Communication status 7
 
 mcd_timer_interrupt:	equ	$FFFF8031 ; IRQ 3 timer; counts down from the 8-bit value written to this register, triggers IRQ 3 when it reaches 0; generally used for PCM driver timing
 
-mcd_interrupt_control:	equ	$FFFF8032 	; enable/disable triggering of interrupts (NOT the same as the interrupts in the 68K status register)
+mcd_interrupt_control:	equ	$FFFF8033 	; enable/disable triggering of interrupts (NOT the same as the interrupts in the 68K status register)
 	; WARNING: when BIOS is in use, ONLY graphics_done_int and timer_int are user-configurable. 
 	; The BIOS requires sub_vblank_int and cdd_int to ALWAYS be enabled, and will malfunction
 	; if they are disabled. cdc_int and subcode_int are enabled/disabled as needed when BIOS calls 
