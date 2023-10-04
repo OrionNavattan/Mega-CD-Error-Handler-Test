@@ -93,10 +93,6 @@ popr:		macro
 ; ---------------------------------------------------------------------------
 
 index:		macro start,idstart,idinc
-;		nolist
-;		pusho
-;		opt	m-
-
 		ifarg \start					; check if start is defined
 			index_start: = \start
 		else
@@ -120,9 +116,6 @@ index:		macro start,idstart,idinc
 		else
 			ptr_id_inc: = 1				; use 1 by default
 		endc
-		
-;		popo
-;		list
 		endm
 		
 ; ---------------------------------------------------------------------------
@@ -132,10 +125,6 @@ index:		macro start,idstart,idinc
 ; ---------------------------------------------------------------------------
 
 ptr:		macro
-;		nolist
-;		pusho
-;		opt	m-
-
 		if index_start=-1
 			dc.\index_width \1-offset(*)
 		else
@@ -160,9 +149,49 @@ ptr:		macro
 		endc
 		
 		ptr_id: = ptr_id+ptr_id_inc			; increment id
+		endm
+		
+; --------------------------------------------------------------------------
+; Make a 68K instruction or dc constant with a VDP command longword or word 
+; as the source. ore or less replicates the vdpComm function in Sonic 2 AS.
+; input: 68k instruction mnemonic, destination offset, destination 
+; (vram/vsram/cram), operation (read/write/dma), destination of 68K instruction,
+; additional adjustment to command longword (shifts, ANDs)
+; --------------------------------------------------------------------------
 
-;		popo
-;		list
+vdp_comm:	macro inst,addr,cmdtarget,cmd,dest,adjustment
+
+		local type,rwd,command
+	
+		if stricmp ("\cmdtarget","vram")
+		type: =	$21					; %10 0001
+		elseif stricmp ("\cmdtarget","cram")
+		type: = $2B					; %10 1011
+		elseif stricmp ("\cmdtarget","vsram")
+		type: = $25					; %10 0101
+		else inform 2,"Invalid VDP command destination (must be vram, cram, or vsram)."
+		endc
+	
+		if stricmp ("\cmd","read")
+		rwd: =	$C					; %00 1100
+		elseif stricmp ("\cmd","write")
+		rwd: = 7					; %00 0111
+		elseif stricmp ("\cmd","dma")
+		rwd: = $27					; %10 0111
+		else inform 2,"Invalid VDP command type (must be read, write, or dma)."
+		endc
+		
+		if stricmp ("\0","w")
+		command: = (((type&rwd)&3)<<30)|((addr&$3FFF)<<16)|(((type&rwd)&$FC)<<2)|((addr&$C000)>>14)&$FFFF ; AND to word-length
+		else
+		command: = (((type&rwd)&3)<<30)|((addr&$3FFF)<<16)|(((type&rwd)&$FC)<<2)|((addr&$C000)>>14)
+		endc
+		
+		if strlen("\dest")>0		
+			\inst\.\0	#command\adjustment\,\dest
+		else	
+			\inst\.\0	command\adjustment\	
+		endc
 		endm
 		
 ; ---------------------------------------------------------------------------

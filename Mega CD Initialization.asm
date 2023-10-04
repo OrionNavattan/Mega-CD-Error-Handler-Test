@@ -112,7 +112,7 @@ BIOS_Found:
 		move.w	#$FF00,mcd_write_protect-mcd_mem_mode(a3)	; reset the sub CPU gate array
 		move.b	#3,mcd_reset-mcd_mem_mode(a3)				; these four values written to these address in this order trigger the reset
 		move.b	#2,mcd_reset-mcd_mem_mode(a3)
-		move.b	#0,mcd_reset-mcd_mem_mode(a3)
+		move.b	d4,mcd_reset-mcd_mem_mode(a3)
 
 		moveq	#$80-1,d2			; wait for gate array reset to complete
 		dbf	d2,*

@@ -66,7 +66,7 @@ Decompress_SubCPUProgram:
 		move.w	d0,d7					; decompress all remaining modules
 
 	.decompress:
-		bsr.w	KosDec			; decompress the module
+		bsr.s	KosDec			; decompress the module
 		dbf	d7,.decompress		; repeat until end of bank or end of data
 		rts
 
