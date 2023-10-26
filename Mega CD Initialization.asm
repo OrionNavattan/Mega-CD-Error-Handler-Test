@@ -1,18 +1,19 @@
 EntryPoint:
 		lea	SetupValues(pc),a0			; load setup array
-		move.w	(a0)+,sr				; disable interrupts during setup; they will be reenabled when ready
+		move.w	(a0)+,sr				; ensure interrupts are disabled (e.g., if falling through from an error reset a la S&K)
 		moveq	#0,d4					; DMA fill/memory clear/Z80 stop bit test value
-		movea.l d4,a4					; clear a4
+		movea.l d4,a4
 		move.l	a4,usp					; clear user stack pointer
-		movem.l (a0)+,a1-a6			; Z80 RAM start, work RAM start, mcd memory mode register, start of CD BIOS bootrom, VDP data port, VDP control port
+		movem.l (a0)+,a1-a6				; Z80 RAM start, work RAM start, MCD memory mode register, start of CD BIOS bootrom, VDP data port, VDP control port
 		movem.w (a0)+,d1/d2				; VDP register increment/value for Z80 stop and reset release ($100),  first VDP register value ($8004)
+		move.l	(Header).w,d7			; 'SEGA' for TMSS fulfillment and checking MCD bootrom
 		moveq	#sizeof_SetupVDP-1,d5		; VDP registers loop counter
 
 		move.b	console_version-mcd_mem_mode(a3),d6	; load hardware version
 		move.b	d6,d3					; copy to d3 for checking revision (d6 will be used later to set region and speed)
 		andi.b	#console_revision,d3			; get only hardware version ID
 		beq.s	.wait_dma				; if Model 1 VA4 or earlier (ID = 0), branch
-		move.l	Header(pc),tmss_sega-mcd_mem_mode(a3)	; satisfy the TMSS
+		move.l	d7,tmss_sega-mcd_mem_mode(a3)	; satisfy the TMSS
    
    .wait_dma:
 		move.w	(a6),ccr				; copy status register to CCR, clearing the VDP write latch and setting the overflow flag if a DMA is in progress
@@ -62,8 +63,8 @@ EntryPoint:
 		btst	#console_mcd_bit,d6	; is there anything in the expansion slot?
 		bne.w	InitFailure1		; branch if not
 
-;FindMCDBIOS:			
-		cmpi.l	#"SEGA",cd_bios_signature-cd_bios(a4)	; is the "SEGA" signature present?
+	;.find_bios:			
+		cmp.l	cd_bios_signature-cd_bios(a4),d7	; is the "SEGA" signature present?
 		bne.w	InitFailure1					; if not, branch
 		cmpi.w	#"BR",cd_bios_sw_type-cd_bios(a4)		; is the "Boot ROM" software type present?
 		bne.w	InitFailure1					; if not, branch
@@ -88,9 +89,9 @@ EntryPoint:
 
 	.namematch:
 		move.b	(a1)+,d1			; is this Sub CPU BIOS address region specific?
-		beq.s	BIOS_Found				; branch if not
+		beq.s	.found				; branch if not
 		cmp.b	cd_bios_region-cd_bios(a4),d1			; does the BIOS region match?
-		beq.s	BIOS_Found				; branch if so
+		beq.s	.found				; branch if so
 
 	.nextBIOS:
 		addq.b	#1,d7				; increment BIOS ID 
@@ -100,7 +101,7 @@ EntryPoint:
 	.notfound:
 		bra.w	InitFailure2
 
-BIOS_Found:
+.found:
 		move.b	d7,(v_bios_id).w				; save BIOS ID
 		andi.b	#console_region+console_speed,d6
 		move.b	d6,(v_console_region).w			; set region variable in RAM
@@ -112,7 +113,7 @@ BIOS_Found:
 		move.w	#$FF00,mcd_write_protect-mcd_mem_mode(a3)	; reset the sub CPU gate array
 		move.b	#3,mcd_reset-mcd_mem_mode(a3)				; these four values written to these address in this order trigger the reset
 		move.b	#2,mcd_reset-mcd_mem_mode(a3)
-		move.b	d4,mcd_reset-mcd_mem_mode(a3)
+		move.b	d4,mcd_reset-mcd_mem_mode(a3)				; d4 = 0
 
 		moveq	#$80-1,d2			; wait for gate array reset to complete
 		dbf	d2,*
@@ -131,8 +132,7 @@ BIOS_Found:
 		bclr	#sub_reset_bit,mcd_reset-mcd_mem_mode(a3)		; set sub CPU to reset
 		bne.s	.reset			; wait for completion			
 		
-;ClearPrgRAM:
-		; Clear the program RAM.
+	;.clear_prgram:
 		clr.b	mcd_write_protect-mcd_mem_mode(a3)			; disable write protect on Sub CPU memory
 		move.b	(a3),d6			; get current bank setting
 		andi.b	#(~program_ram_bank)&$FF,d6		; set program ram bank to 0
@@ -164,7 +164,6 @@ BIOS_Found:
 		rts
 		
 	.clearcoms:	
-		; Clear the main CPU communication registers.
 		lea mcd_maincoms-mcd_mem_mode(a3),a0
 		move.b	d4,mcd_com_flags-mcd_maincoms(a0)	; clear main CPU communication flag
 		move.l	d4,(a0)+		; clear main CPU communication registers
@@ -172,8 +171,7 @@ BIOS_Found:
 		move.l	d4,(a0)+
 		move.l	d4,(a0)
 		
-;LoadSubCPUBIOS:
-		; Decompress the sub CPU BIOS.
+	;.load_bios:
 		move.b	(a3),d6			; get current bank setting
 		andi.b	#(~program_ram_bank)&$FF,d6		; set program ram bank to 0
 		move.b	d6,(a3)	
@@ -190,8 +188,7 @@ BIOS_Found:
 		
 		move.b	#sub_bios_end>>9,mcd_write_protect-mcd_mem_mode(a3)		; enable write protect on BIOS code in program RAM
 
-		bset	#sub_reset_bit,mcd_reset-mcd_mem_mode(a3)		; release sub CPU reset
-		bclr	#sub_bus_request_bit,mcd_reset-mcd_mem_mode(a3)	; release sub CPU bus
+		move.b	#sub_run,mcd_reset-mcd_mem_mode(a3)
 		enable_ints
 	
 	.waitwordram:
@@ -210,17 +207,20 @@ BIOS_Found:
 
 	;.gotomain:
 		bra.w	MainLoop
+; ===========================================================================
 		
 SubCrash:
 		trap #0		; enter sub CPU error handler
+; ===========================================================================
 		
 InitFailure1:
 		move.w	#cRed,(a5)				; if no Mega CD device is attached, set BG color to red
 		bra.s	*					; stay here forever		
-		
+; ===========================================================================		
 InitFailure2:
 		move.w	#cBlue,(a5)				; if no matching BIOS is found, set BG color to blue
 		bra.s	*					; stay here forever		
+; ===========================================================================
 				
 SetupValues:
 		dc.w	$2700					; disable interrupts
