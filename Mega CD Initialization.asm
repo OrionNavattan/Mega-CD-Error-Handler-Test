@@ -4,7 +4,7 @@ EntryPoint:
 		moveq	#0,d4					; DMA fill/memory clear/Z80 stop bit test value
 		movea.l d4,a4
 		move.l	a4,usp					; clear user stack pointer
-		movem.l (a0)+,a1-a6				; Z80 RAM start, work RAM start, MCD memory mode register, start of CD BIOS bootrom, VDP data port, VDP control port
+		movem.l (a0)+,a1-a6				; Z80 RAM start, work RAM start, MCD memory mode register, CD BIOS name in bootrom header, VDP data port, VDP control port
 		movem.w (a0)+,d1/d2				; VDP register increment/value for Z80 stop and reset release ($100),  first VDP register value ($8004)
 		move.l	(Header).w,d7			; 'SEGA' for TMSS fulfillment and checking MCD bootrom
 		moveq	#sizeof_SetupVDP-1,d5		; VDP registers loop counter
@@ -28,10 +28,10 @@ EntryPoint:
 		move.l	(a0)+,(a6)				; set DMA fill destination
 		move.w	d4,(a5)					; set DMA fill value (0000), clearing the VRAM
 
-		move.w	(a0)+,d5	
+		move.w	(a0)+,d5				; (sizeof_workram/4)-1
    .loop_ram:
-		move.l	d4,(a2)+				; a2 = start of 68K RAM
-		dbf	d5,.loop_ram				; clear all RAM
+		move.l	d4,(a2)+				; clear 4 bytes of workram
+		dbf	d5,.loop_ram				; repeat until entire workram has been cleared
 
 		move.w	d1,z80_bus_request-mcd_mem_mode(a3)					; stop the Z80 (we will clear the VSRAM and CRAM while waiting for it to stop)
 		move.w	d1,z80_reset-mcd_mem_mode(a3)	; deassert Z80 reset (ZRES is held high on console reset until we clear it)
@@ -39,21 +39,21 @@ EntryPoint:
 		move.w	(a0)+,(a6)				; set VDP increment to 2
 
 		move.l	(a0)+,(a6)				; set VDP to VSRAM write
-		moveq	#(sizeof_vsram/4)-1,d5			; set repeat times
+		moveq	#(sizeof_vsram/4)-1,d5			; loop counter
    .loop_vsram:
 		move.l	d4,(a5)					; clear 4 bytes of VSRAM
 		dbf	d5,.loop_vsram				; repeat until entire VSRAM has been cleared
 
 		move.l	(a0)+,(a6)				; set VDP to CRAM write
-		moveq	#(sizeof_pal_all/4)-1,d5		; set repeat times
+		moveq	#(sizeof_pal_all/4)-1,d5		; loop counter
    .loop_cram:
 		move.l	d4,(a5)					; clear two palette entries
 		dbf	d5,.loop_cram				; repeat until entire CRAM has been cleared
 
-		move.w #sizeof_z80_ram-1,d5			; size of Z80 ram
+		move.w	(a0)+,d5				; sizeof_z80_ram-1
    .clear_Z80_ram:
-		move.b 	d4,(a1)+				; clear the Z80 RAM
-		dbf	d5,.clear_Z80_ram
+		move.b 	d4,(a1)+				; clear one byte of Z80 RAM
+		dbf	d5,.clear_Z80_ram			; repeat until entire Z80 RAM has been cleared
 		
 		moveq	#4-1,d5					; set number of PSG channels to mute
    .psg_loop:
@@ -64,9 +64,9 @@ EntryPoint:
 		bne.w	InitFailure1		; branch if not
 
 	;.find_bios:			
-		cmp.l	cd_bios_signature-cd_bios(a4),d7	; is the "SEGA" signature present?
+		cmp.l	cd_bios_signature-cd_bios_name(a4),d7	; is the "SEGA" signature present?
 		bne.w	InitFailure1					; if not, branch
-		cmpi.w	#"BR",cd_bios_sw_type-cd_bios(a4)		; is the "Boot ROM" software type present?
+		cmpi.w	#"BR",cd_bios_sw_type-cd_bios_name(a4)		; is the "Boot ROM" software type present?
 		bne.w	InitFailure1					; if not, branch
 
 		; Determine which MEGA CD device is attached.
@@ -78,7 +78,8 @@ EntryPoint:
 	.findloop:
 		adda.w	(a2)+,a1			; a1 = pointer to BIOS data
 		addq.w	#4,a1					; skip over BIOS payload address
-		lea	cd_bios_name-cd_bios(a4),a6			; get BIOS name
+		;lea	cd_bios_name-cd_bios(a4),a6			; get BIOS name
+		movea.l	a4,a6				; get BIOS name
 
 	.checkname:
 		move.b	(a1)+,d1			; get character
@@ -90,7 +91,7 @@ EntryPoint:
 	.namematch:
 		move.b	(a1)+,d1			; is this Sub CPU BIOS address region specific?
 		beq.s	.found				; branch if not
-		cmp.b	cd_bios_region-cd_bios(a4),d1			; does the BIOS region match?
+		cmp.b	cd_bios_region-cd_bios_name(a4),d1			; does the BIOS region match?
 		beq.s	.found				; branch if so
 
 	.nextBIOS:
@@ -224,12 +225,13 @@ InitFailure2:
 				
 SetupValues:
 		dc.w	$2700					; disable interrupts
-		dc.l	z80_ram
-		dc.l	workram				; ram_start
-		dc.l	mcd_mem_mode
-		dc.l	cd_bios
-		dc.l	vdp_data_port
-		dc.l	vdp_control_port
+		
+		dc.l	z80_ram				; a1
+		dc.l	workram				; a2
+		dc.l	mcd_mem_mode		; a3
+		dc.l	cd_bios_name		; a4
+		dc.l	vdp_data_port		; a5
+		dc.l	vdp_control_port	; a6
 
 		dc.w	vdp_mode_register2-vdp_mode_register1	; VDP Reg increment value & opposite initialisation flag for Z80
 		dc.w	vdp_md_color				; $8004; normal color mode, horizontal interrupts disabled
@@ -262,11 +264,11 @@ SetupValues:
 		arraysize SetupVDP
 
 		dc.l	$40000080				; DMA fill VRAM
-		dc.w	(sizeof_workram/4)-1
+		dc.w	(sizeof_workram/4)-1	; workram clear loop counter
 		dc.w	vdp_auto_inc+2				; VDP increment
 		dc.l	$40000010				; VSRAM write mode
 		dc.l	$C0000000				; CRAM write mode
-   
+   		dc.w	sizeof_z80_ram-1		; Z80 ram clear loop counter
 
 		dc.b	$9F,$BF,$DF,$FF				; PSG mute values (PSG 1 to 4) 
 
