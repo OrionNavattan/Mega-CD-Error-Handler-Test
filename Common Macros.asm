@@ -21,16 +21,16 @@ align:		macro length,value
 		dcb.b (\length-(*%\length))%\length,0
 	endc
 	endm
-	
+
 ; ---------------------------------------------------------------------------
 ; Sign-extend a value and use it with moveq
-; Replicates the signextendB function in Sonic 2 AS; required to prevent the 
+; Replicates the signextendB function in Sonic 2 AS; required to prevent the
 ; assembler from generating a sign-extension warning.
-; --------------------------------------------------------------------------- 
- 
+; ---------------------------------------------------------------------------
+
 moveq_:		macros
  		moveq	#(\1\+-((-(\1\&(1<<(8-1))))&(1<<(8-1))))!-((-(\1\&(1<<(8-1))))&(1<<(8-1))),\2
-    	
+
 ; ---------------------------------------------------------------------------
 ; Save and restore registers from the stack.
 ; ---------------------------------------------------------------------------
@@ -84,7 +84,7 @@ popr:		macro
 			move.l	(sp)+,\1			; restore one whole register
 			endc
 		endc
-		endm	
+		endm
 
 ; ---------------------------------------------------------------------------
 ; Create a pointer index.
@@ -104,7 +104,7 @@ index:		macro start,idstart,idinc
 		else
 		index_width: equs "w"				; use w by default
 		endc
-			
+
 		ifarg \idstart					; check if first pointer id is defined
 			ptr_id: = \idstart
 		else
@@ -117,10 +117,10 @@ index:		macro start,idstart,idinc
 			ptr_id_inc: = 1				; use 1 by default
 		endc
 		endm
-		
+
 ; ---------------------------------------------------------------------------
 ; Item in a pointer index.
-; input: pointer target, optional alias (useful if multiple pointers point 
+; input: pointer target, optional alias (useful if multiple pointers point
 ; to same location, such as the bubble mappings or deleted objects
 ; ---------------------------------------------------------------------------
 
@@ -130,31 +130,31 @@ ptr:		macro
 		else
 			dc.\index_width \1-index_start
 		endc
-		
+
 		if ~def(prefix_id)
 			prefix_id: equs "id_"
 		endc
-		
+
 		if instr("\1",".")=1				; check if pointer is local
 		else
-		
+
 			ifarg \2
-				\prefix_id\\2: equ ptr_id	; create id for pointer using explicitly specified alias			
+				\prefix_id\\2: equ ptr_id	; create id for pointer using explicitly specified alias
 			elseif ~def(\prefix_id\\1)
 				\prefix_id\\1: equ ptr_id	; create id for pointer
 			else
 				\prefix_id\\1_\$ptr_id: equ ptr_id ; if id already exists, append number
 			endc
-			
+
 		endc
-		
+
 		ptr_id: = ptr_id+ptr_id_inc			; increment id
 		endm
-		
+
 ; --------------------------------------------------------------------------
-; Make a 68K instruction or dc constant with a VDP command longword or word 
+; Make a 68K instruction or dc constant with a VDP command longword or word
 ; as the source. ore or less replicates the vdpComm function in Sonic 2 AS.
-; input: 68k instruction mnemonic, destination offset, destination 
+; input: 68k instruction mnemonic, destination offset, destination
 ; (vram/vsram/cram), operation (read/write/dma), destination of 68K instruction,
 ; additional adjustment to command longword (shifts, ANDs)
 ; --------------------------------------------------------------------------
@@ -162,7 +162,7 @@ ptr:		macro
 vdp_comm:	macro inst,addr,cmdtarget,cmd,dest,adjustment
 
 		local type,rwd,command
-	
+
 		if stricmp ("\cmdtarget","vram")
 		type: =	$21					; %10 0001
 		elseif stricmp ("\cmdtarget","cram")
@@ -171,7 +171,7 @@ vdp_comm:	macro inst,addr,cmdtarget,cmd,dest,adjustment
 		type: = $25					; %10 0101
 		else inform 2,"Invalid VDP command destination (must be vram, cram, or vsram)."
 		endc
-	
+
 		if stricmp ("\cmd","read")
 		rwd: =	$C					; %00 1100
 		elseif stricmp ("\cmd","write")
@@ -180,24 +180,24 @@ vdp_comm:	macro inst,addr,cmdtarget,cmd,dest,adjustment
 		rwd: = $27					; %10 0111
 		else inform 2,"Invalid VDP command type (must be read, write, or dma)."
 		endc
-		
+
 		if stricmp ("\0","w")
 		command: = (((type&rwd)&3)<<30)|((addr&$3FFF)<<16)|(((type&rwd)&$FC)<<2)|((addr&$C000)>>14)&$FFFF ; AND to word-length
 		else
 		command: = (((type&rwd)&3)<<30)|((addr&$3FFF)<<16)|(((type&rwd)&$FC)<<2)|((addr&$C000)>>14)
 		endc
-		
-		if strlen("\dest")>0		
+
+		if strlen("\dest")>0
 			\inst\.\0	#command\adjustment\,\dest
-		else	
-			\inst\.\0	command\adjustment\	
+		else
+			\inst\.\0	command\adjustment\
 		endc
 		endm
-		
+
 ; ---------------------------------------------------------------------------
 ; Make a size constant for an array.
 ; input: array start label
-; ---------------------------------------------------------------------------	
+; ---------------------------------------------------------------------------
 
 arraysize:	macros
-		sizeof_\1: equ	*-\1		
+		sizeof_\1: equ	*-\1

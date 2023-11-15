@@ -2,7 +2,7 @@
 ; Mega CD Sub CPU hardware addresses, entry points, and BIOS Functions
 
 ; Many have been renamed from the "official" names from the sake of clarity
-; and readability. Wherever the name has changed beyond moving away from 
+; and readability. Wherever the name has changed beyond moving away from
 ; all caps, the original name will be given in the description.
 ; ---------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ word_ram_2M_end:	equ	$C0000	; MCD Word RAM end (2M)
 
 ; Backup RAM
 backup_ram:			equ	$FE0000	; Mega CD backup RAM (only odd bytes accessible)
-backup_ram_end:		equ $FE3FFF	
+backup_ram_end:		equ $FE3FFF
 
 mcd_control_registers:		equ $FFFF8000 ; aka, the gate array
 mcd_led_control:			equ	$FFFF8000 ; LED control register; BIOS use only
@@ -27,30 +27,30 @@ mcd_led_control:			equ	$FFFF8000 ; LED control register; BIOS use only
 	green_led_bit:	equ	1 ; enable/disable green LED
 	red_led:		equ 1<<red_led_bit
 	green_led:		equ 1<<green_led_bit
-	
+
 mcd_reset:			equ	$FFFF8001 ; reset and hardware version register
 	peripheral_reset_bit:		equ 0	; set to 0 to initiate peripheral reset, reads 1 once reset is finished
 	hardware_version:	equ	$F0		; hardware version bits
-	
+
 mcd_write_protect:	equ	$FFFF8002 ; read-only; returns write protection address set by main CPU
 mcd_mem_mode:		equ $FFFF8003 ; word ram mode/swap and priority mode registers; first two bits have different meanings depending on 1M or 2M mode
 	; 1M mode:
 	bank_assignment_bit:	equ 0	; RET; set word RAM bank assignment; 0 = bank 0 main CPU and bank 1 sub CPU, 1 = bank 0 sub CPU and bank 1 main CPU; when read, returns 1 if swap is in progress
 	bank_swap_request_bit:	equ 1	; DMNA; read-only; returns 1 while swap is in progress and 0 once it is complete
-	; 2M mode:	
+	; 2M mode:
 	wordram_swapmain_bit:	equ 0	; RET; give word RAM to main CPU by setting to 1; returns 0 while swap is in progress and 1 once it is complete
 	wordram_swapsub_bit:	equ 1	; DMNA; read-only, 0 = word RAM is assigned to main CPU; 1 = word RAM is assigned to sub CPU
-	
+
 	wordram_mode_bit:		equ 2	; MODE; 0 = 2M mode, 1 = 1M mode
-	
+
 	priority_underwrite_bit:	equ 3	; enables underwrite mode; data output from GFX ops will not overwrite blank pixels already in the image buffer, effectively rendering under the previous data
 	priority_overwrite_bit:		equ 4	; enables overwrite mode; non-blank pixels output from GFX ops will write over existing data in image buffer, effectively rendering over the previous data
 	priority_disabled:			equ 0 	; priority mode disabled; all data output from GFX ops is written
 	priority_underwrite:		equ 1<<priority_underwrite_bit
-	priority_overwrite:			equ 1<<priority_overwrite_bit	
-	
-	program_ram_bank:			equ $C0	; bits 6 and 7		 
-	
+	priority_overwrite:			equ 1<<priority_overwrite_bit
+
+	program_ram_bank:			equ $C0	; bits 6 and 7
+
 mcd_cd_controller_mode:		equ $FFFF8004	; CD data decoder mode and destination select register
 	cd_destination:		equ 7	; bits 0-2, destination of CD data read
 		cd_dest_main:		equ	2	; main CPU read from its instance of mcd_cdc_data
@@ -58,11 +58,11 @@ mcd_cd_controller_mode:		equ $FFFF8004	; CD data decoder mode and destination se
 		cd_dest_pcm:		equ 4	; DMA to PCM waveram
 		cd_dest_prgram:		equ 5	; DMA to program RAM
 		cd_dest_wordram:	equ 7	; DMA to word RAM
-	
+
 	hibyte_ready_bit:	equ 5	; set when upper byte is sent from CD controller; cleared once full word is ready
 	data_ready_bit:		equ 6	; set once full word of data is ready
 	data_end_bit:		equ 7	; set once the data read is finished
-	
+
 mcd_cdc_rs0:		equ	$FFFF8005 ; CD data decoder control registers; BIOS use only
 					; 	$FFFF0006 unused
 mcd_cdc_rs1:		equ	$FFFF8007 ; CD data decoder control registers; BIOS use only
@@ -117,11 +117,11 @@ mcd_subcom_7_lo:	equ $FFFF802F ; Communication status 7
 mcd_timer_interrupt:	equ	$FFFF8031 ; IRQ 3 timer; counts down from the 8-bit value written to this register, triggers IRQ 3 when it reaches 0; generally used for PCM driver timing
 
 mcd_interrupt_control:	equ	$FFFF8033 	; enable/disable triggering of interrupts (NOT the same as the interrupts in the 68K status register)
-	; WARNING: when BIOS is in use, ONLY graphics_done_int and timer_int are user-configurable. 
+	; WARNING: when BIOS is in use, ONLY graphics_done_int and timer_int are user-configurable.
 	; The BIOS requires sub_vblank_int and cdd_int to ALWAYS be enabled, and will malfunction
-	; if they are disabled. cdc_int and subcode_int are enabled/disabled as needed when BIOS calls 
+	; if they are disabled. cdc_int and subcode_int are enabled/disabled as needed when BIOS calls
 	; that require them are executed.
-	
+
 	graphics_done_int:	equ 1	; triggered when a graphics operation completes (only while wordram is in 2M mode)
 	sub_vblank_int:		equ 2	; interrupt triggered by main CPU, generally on VBlank
 	timer_int:			equ 3	; triggered when timer set in mcd_timer_interrupt reaches 0
@@ -167,21 +167,21 @@ gfx_fontgen_out:	equ	$FFFF8050 	; finished font data, 8 bytes
 gfx_stampsize:	equ	$FFFF8058 	; stamp size/Map size
 	stampmap_repeat_bit:	equ 0 ; 0 = repeat when end of map is reached, 1 = 0 data beyond map size is rendered as blank pixels
 	stamp_size_bit:			equ 1 ; 0 = 16x16 pixels, 1 = 32x32 pixels
-	stampmap_size_bit:		equ 2 ; 0 = 1x1 screen (256x256 pixels), 1 = 16x16 screen (4096x4096 pixels) 
+	stampmap_size_bit:		equ 2 ; 0 = 1x1 screen (256x256 pixels), 1 = 16x16 screen (4096x4096 pixels)
 
 	stampmap_repeat:			equ 1<<stampmap_repeat_bit
 	stamp_size_16x16:			equ 0
 	stamp_size_32x32:			equ 1<<stamp_size_bit
 	stampmap_size_256x256:		equ 0
 	stampmap_size_4096x4096:	equ 1<<stampmap_size_bit
-	
+
 gfx_stampmap:	equ	$FFFF805A 	; start address of stamp map, expressed as offset relative to start of 2M word RAM divided by 4
 	; Start offsets are limited to certain addresses as follows:
 	; stamp_size_16x16|stampmap_size_256x256 = multiples of $200
 	; stamp_size_32x32|stampmap_size_256x256 = multiples of $80
-	; stamp_size_16x16|stampmap_size_4096x4096 = multiples of $20000	
+	; stamp_size_16x16|stampmap_size_4096x4096 = multiples of $20000
 	; stamp_size_32x32|stampmap_size_4096x4096 = multiples of $8000
-		
+
 gfx_bufheight:	equ	$FFFF805C 	; image buffer height in tiles - 1 , maximum height is 32 tiles
 gfx_imgstart:	equ	$FFFF805E 	; image buffer start address; same restrictions on location apply as with stampmaps
 gfx_imgoffset:	equ	$FFFF8060 	; specifies an optional offset of up to 7 pixels on each axis, bits 0-2 horizontal, bits 3-5 vertical
@@ -214,7 +214,7 @@ _CDBIOS:		equ	$5F22	; CD BIOS function entry
 
 ; User program entry points
 _UserInit:		equ	$5F28	; _USERCALL0; user initialization code
-_UserMain:		equ	$5F2E	; _USERCALL1; user program main entry point	
+_UserMain:		equ	$5F2E	; _USERCALL1; user program main entry point
 _UserVBlank:	equ	$5F34	; _USERCALL2; user VBlank routine
 _UserCall3:		equ	$5F3A	; _USERCALL3; user-defined call, not used by BIOS
 
@@ -259,14 +259,14 @@ _Trap15:		equ	$5FFA
 ; -------------------------------------------------------------------------
 ; BIOS function calls
 
-; Except for the boot and BURAM commands, these are used with the _CDBIOS 
-; entry point. Command IDs below $80 are executed in full on the spot; 
-; command IDs $80 and above are queued and executed during CDD, CDC, and 
+; Except for the boot and BURAM commands, these are used with the _CDBIOS
+; entry point. Command IDs below $80 are executed in full on the spot;
+; command IDs $80 and above are queued and executed during CDD, CDC, and
 ; subcode interrupts.
 
-; The descriptions are intended as an at-a-glace summary. See the MEGA CD 
-; BIOS manual for more complete explanations of each function and their 
-; usage. A copy can be obtained here: 
+; The descriptions are intended as an at-a-glace summary. See the MEGA CD
+; BIOS manual for more complete explanations of each function and their
+; usage. A copy can be obtained here:
 ; https://segaretro.org/images/archive/4/44/20190509114241%21MCDBios.pdf
 ; -------------------------------------------------------------------------
 
@@ -321,7 +321,7 @@ ROMReadNum:		equ	$20 ; ROMREADN; begin CD data read at a specific logical sector
 ROMReadBetween:	equ	$21	; ROMREADE; perform CD data read between two designated logical sectors
 
 ; CD data decoder commands
-DecoderStart:		equ	$87	; CDCSTART: begin data readout from current logical sector 
+DecoderStart:		equ	$87	; CDCSTART: begin data readout from current logical sector
 DecoderStartP:		equ	$88 ; CDCSTARTP
 DecoderStop:		equ	$89	; CDCSTOP; terminate read and discard current sector
 DecoderStatus:		equ	$8A	; CDCSTAT; check if data is ready
@@ -340,7 +340,7 @@ SubcodeLastPQ:		equ	$94 ; SCDPQL; get the last P and Q codes
 
 ; Misc BIOS commands
 ChkBIOS:		equ	$80 ; CDBCHK; check if CD drive control, data read, or CD audio operations have finished
-BIOSStatus:		equ	$81	; CDBSTAT; get status of the BIOS and CD drive and write to _BIOSStatus 
+BIOSStatus:		equ	$81	; CDBSTAT; get status of the BIOS and CD drive and write to _BIOSStatus
 TOCWrite:		equ	$82	; CDBTOCWRITE; modify the TOC table
 TOCRead:		equ	$83	; CDBTOCREAD; read the TOC table
 StandbyWait:	equ	$84	; CDBPAUSE; set time to wait while paused before entering standby mode

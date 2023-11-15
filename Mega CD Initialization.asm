@@ -14,17 +14,17 @@ EntryPoint:
 		andi.b	#console_revision,d3			; get only hardware version ID
 		beq.s	.wait_dma				; if Model 1 VA4 or earlier (ID = 0), branch
 		move.l	d7,tmss_sega-mcd_mem_mode(a3)	; satisfy the TMSS
-   
+
    .wait_dma:
 		move.w	(a6),ccr				; copy status register to CCR, clearing the VDP write latch and setting the overflow flag if a DMA is in progress
 		bvs.s	.wait_dma				; if a DMA was in progress during a soft reset, wait until it is finished
-   
+
    .loop_vdp:
 		move.w	d2,(a6)					; set VDP register
 		add.w	d1,d2					; advance register ID
 		move.b	(a0)+,d2				; load next register value
 		dbf	d5,.loop_vdp				; repeat for all registers; final value loaded will be used later to initialize I/0 ports
-   
+
 		move.l	(a0)+,(a6)				; set DMA fill destination
 		move.w	d4,(a5)					; set DMA fill value (0000), clearing the VRAM
 
@@ -54,7 +54,7 @@ EntryPoint:
    .clear_Z80_ram:
 		move.b 	d4,(a1)+				; clear one byte of Z80 RAM
 		dbf	d5,.clear_Z80_ram			; repeat until entire Z80 RAM has been cleared
-		
+
 		moveq	#4-1,d5					; set number of PSG channels to mute
    .psg_loop:
 		move.b	(a0)+,psg_input-vdp_data_port(a5)	; set the PSG channel volume to null (no sound)
@@ -63,7 +63,7 @@ EntryPoint:
 		btst	#console_mcd_bit,d6	; is there anything in the expansion slot?
 		bne.w	InitFailure1		; branch if not
 
-	;.find_bios:			
+	;.find_bios:
 		cmp.l	cd_bios_signature-cd_bios_name(a4),d7	; is the "SEGA" signature present?
 		bne.w	InitFailure1					; if not, branch
 		cmpi.w	#"BR",cd_bios_sw_type-cd_bios_name(a4)		; is the "Boot ROM" software type present?
@@ -95,7 +95,7 @@ EntryPoint:
 		beq.s	.found				; branch if so
 
 	.nextBIOS:
-		addq.b	#1,d7				; increment BIOS ID 
+		addq.b	#1,d7				; increment BIOS ID
 		movea.l	a0,a1				; reset a1
 		dbf	d0,.findloop			; loop until all BIOSes are checked
 
@@ -106,7 +106,7 @@ EntryPoint:
 		move.b	d7,(v_bios_id).w				; save BIOS ID
 		andi.b	#console_region+console_speed,d6
 		move.b	d6,(v_console_region).w			; set region variable in RAM
-		
+
 		move.b	d2,port_1_control-mcd_mem_mode(a3)	; initialize port 1
 		move.b	d2,port_2_control-mcd_mem_mode(a3)	; initialize port 2
 		move.b	d2,port_e_control-mcd_mem_mode(a3)	; initialize port e
@@ -118,43 +118,43 @@ EntryPoint:
 
 		moveq	#$80-1,d2			; wait for gate array reset to complete
 		dbf	d2,*
-		
+
 		; If you're loading a Z80 sound driver, this is the place to do it, replacing
 		; the above two lines.
-		
+
 		move.w	#$100-1,d2	; maximum time to wait for response
-	.req_bus:	
+	.req_bus:
 		bset	#sub_bus_request_bit,mcd_reset-mcd_mem_mode(a3)			; request the sub CPU bus
 		bne.s	.reset									; branch if it has been granted
 		dbeq	d2,.req_bus							; if it has not been granted, wait
-		trap #1							; if sub CPU is unresponsive				
-				
+		trap #1							; if sub CPU is unresponsive
+
 	.reset:
 		bclr	#sub_reset_bit,mcd_reset-mcd_mem_mode(a3)		; set sub CPU to reset
-		bne.s	.reset			; wait for completion			
-		
+		bne.s	.reset			; wait for completion
+
 	;.clear_prgram:
 		clr.b	mcd_write_protect-mcd_mem_mode(a3)			; disable write protect on Sub CPU memory
 		move.b	(a3),d6			; get current bank setting
 		andi.b	#(~program_ram_bank)&$FF,d6		; set program ram bank to 0
 		move.b	d6,(a3)
 		bsr.s	.clearbank
-		
+
 		move.b	(a3),d6			; get current bank setting
 		addi.b	#$40,d6
 		move.b	d6,(a3)		; advance to second bank
 		bsr.s	.clearbank
-		
+
 		move.b	(a3),d6			; get current bank setting
 		addi.b	#$40,d6
 		move.b	d6,(a3)		; advance to third bank
 		bsr.s	.clearbank
-		
+
 		move.b	(a3),d6			; get current bank setting
 		addi.b	#$40,d6
 		move.b	d6,(a3)		; advance to fourth and final bank
 		pea	.clearcoms(pc)	; 'return' to next step of init
-		
+
 	.clearbank:
 		lea (program_ram).l,a0
 		move.w  #(sizeof_program_ram_window/4)-1,d5
@@ -163,41 +163,41 @@ EntryPoint:
 		move.l  d4,(a0)+	; clear 4 bytes of the program ram bank
 		dbf d5,.loop	; repeat for whole bank
 		rts
-		
-	.clearcoms:	
+
+	.clearcoms:
 		lea mcd_maincoms-mcd_mem_mode(a3),a0
 		move.b	d4,mcd_com_flags-mcd_maincoms(a0)	; clear main CPU communication flag
 		move.l	d4,(a0)+		; clear main CPU communication registers
 		move.l	d4,(a0)+
 		move.l	d4,(a0)+
 		move.l	d4,(a0)
-		
+
 	;.load_bios:
 		move.b	(a3),d6			; get current bank setting
 		andi.b	#(~program_ram_bank)&$FF,d6		; set program ram bank to 0
-		move.b	d6,(a3)	
-		
+		move.b	d6,(a3)
+
 		lea	(program_ram).l,a1		; start of program RAM
 		move.b	(v_bios_id).w,d4	; get BIOS ID
-		add.w	d4,d4				; make index		
+		add.w	d4,d4				; make index
 		lea MCDBIOSList(pc),a0
 		move.w	-2(a0,d4.w),d1	; -2 since IDs start at 1
 		movea.l	(a0,d1.w),a0	; a0 = start of compressed BIOS payload
 
 		bsr.w	KosDec					; decompress the sub CPU BIOS (uses a0, a1, a4, a5)
 		bsr.w	Decompress_SubCPUProgram	; decompress the sub CPU program
-		
+
 		move.b	#sub_bios_end>>9,mcd_write_protect-mcd_mem_mode(a3)		; enable write protect on BIOS code in program RAM
 
 		move.b	#sub_run,mcd_reset-mcd_mem_mode(a3)
 		enable_ints
-	
+
 	.waitwordram:
 		cmpi.b	#$FF,mcd_sub_flag-mcd_mem_mode(a3)	; is sub CPU OK?
-		beq.w	SubCrash				; branch if not	
+		beq.w	SubCrash				; branch if not
 		btst	#wordram_swapmain_bit,(a3)	; has sub CPU given us the word RAM?
-		beq.s	.waitwordram		; if not, wait		
-		
+		beq.s	.waitwordram		; if not, wait
+
 		lea (wordram_2M).l,a0
 		moveq_	((sizeof_wordram_2M/4)-1),d5
 		moveq	#0,d4
@@ -209,23 +209,23 @@ EntryPoint:
 	;.gotomain:
 		bra.w	MainLoop
 ; ===========================================================================
-		
+
 SubCrash:
 		trap #0		; enter sub CPU error handler
 ; ===========================================================================
-		
+
 InitFailure1:
 		move.w	#cRed,(a5)				; if no Mega CD device is attached, set BG color to red
-		bra.s	*					; stay here forever		
-; ===========================================================================		
+		bra.s	*					; stay here forever
+; ===========================================================================
 InitFailure2:
 		move.w	#cBlue,(a5)				; if no matching BIOS is found, set BG color to blue
-		bra.s	*					; stay here forever		
+		bra.s	*					; stay here forever
 ; ===========================================================================
-				
+
 SetupValues:
 		dc.w	$2700					; disable interrupts
-		
+
 		dc.l	z80_ram				; a1
 		dc.l	workram				; a2
 		dc.l	mcd_mem_mode		; a3
@@ -236,7 +236,7 @@ SetupValues:
 		dc.w	vdp_mode_register2-vdp_mode_register1	; VDP Reg increment value & opposite initialisation flag for Z80
 		dc.w	vdp_md_color				; $8004; normal color mode, horizontal interrupts disabled
 	SetupVDP:
-		dc.b	(vdp_enable_vint|vdp_enable_dma|vdp_ntsc_display|vdp_md_display)&$FF ;  $8134; mode 5, NTSC, vertical interrupts and DMA enabled 
+		dc.b	(vdp_enable_vint|vdp_enable_dma|vdp_ntsc_display|vdp_md_display)&$FF ;  $8134; mode 5, NTSC, vertical interrupts and DMA enabled
 		dc.b	(vdp_fg_nametable+(vram_fg>>10))&$FF	; $8230; foreground nametable starts at $C000
 		dc.b	(vdp_window_nametable+(vram_window>>10))&$FF ; $8328; window nametable starts at $A000
 		dc.b	(vdp_bg_nametable+(vram_bg>>13))&$FF	; $8407; background nametable starts at $E000
@@ -260,7 +260,7 @@ SetupValues:
 		dc.b	vdp_dma_vram_fill&$FF			; VDP $9780 - DMA fill VRAM
 
 		dc.b	$40					; I/O port initialization value
-   
+
 		arraysize SetupVDP
 
 		dc.l	$40000080				; DMA fill VRAM
@@ -270,7 +270,7 @@ SetupValues:
 		dc.l	$C0000000				; CRAM write mode
    		dc.w	sizeof_z80_ram-1		; Z80 ram clear loop counter
 
-		dc.b	$9F,$BF,$DF,$FF				; PSG mute values (PSG 1 to 4) 
+		dc.b	$9F,$BF,$DF,$FF				; PSG mute values (PSG 1 to 4)
 
 MCDBIOSList:	index *,1
 		ptr	MCDBIOS_JP1			; 1

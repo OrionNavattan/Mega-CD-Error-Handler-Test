@@ -27,18 +27,18 @@ Line1111Emu:
 
 ErrorExcept:
 		__ErrorMessage "SUB CPU: ERROR EXCEPTION", _eh_show_sr_usp
-		
+
 ErrorHandler:
 		move	#$2700,sr				; disable all interrupts
 		st.b (mcd_sub_flag).w		; set flag to let main CPU know we've crashed (assumes communication protocol includes checking this flag for $FF before sending commands or while waiting for responses)
 		movem.l	d0-a6,-(sp)				; dump all registers
 		move.l	usp,a0
 		move.l	a0,-(sp)			; dump USP (unnecessary if BIOS is being used, as user mode can not be used with it)
-		
+
 	.waitmain:
 		cmpi.b	#$FF,(mcd_main_flag).w	; has the main CPU noticed?
 		bne.s	.waitmain	; if not, branch
-		
+
 		; Main CPU has noticed
 		move.l	sp,(mcd_subcom_0).w	; get address of bottom of stack (including dumped registers) for main CPU
 		clr.b	(mcd_sub_flag).w ; clear flag to let main CPU know we are done

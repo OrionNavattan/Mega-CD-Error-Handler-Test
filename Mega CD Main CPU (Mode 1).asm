@@ -25,7 +25,7 @@ vdp_control_port:	equ $C00004
 	vdp_md_color:		equ vdp_mode_register1+4	; Mega Drive colour mode
 	vdp_freeze_hvcounter:	equ vdp_mode_register1+2	; freeze H/V counter on interrupts
 	vdp_disable_display:	equ vdp_mode_register1+1
-	
+
 	vdp_mode_register2:	equ $8100
 	vdp_128kb_vram:		equ vdp_mode_register2+$80	; use 128kB of VRAM, Teradrive only
 	vdp_enable_display:	equ vdp_mode_register2+$40	; if not set, display is filled with background color
@@ -34,7 +34,7 @@ vdp_control_port:	equ $C00004
 	vdp_pal_display:	equ vdp_mode_register2+8	; 240px screen height (PAL)
 	vdp_ntsc_display:	equ vdp_mode_register2		; 224px screen height (NTSC)
 	vdp_md_display:		equ vdp_mode_register2+4	; mode 5 Mega Drive display
-	
+
 	vdp_fg_nametable:	equ $8200			; fg (plane A) nametable setting
 	vdp_window_nametable:	equ $8300			; window nametable setting
 	vdp_bg_nametable:	equ $8400			; bg (plane B) nametable setting
@@ -44,7 +44,7 @@ vdp_control_port:	equ $C00004
 	vdp_sms_hscroll:	equ $8800
 	vdp_sms_vscroll:	equ $8900
 	vdp_hint_counter:	equ $8A00			; number of lines between horizontal interrupts
-	
+
 	vdp_mode_register3:	equ $8B00
 	vdp_enable_xint:	equ vdp_mode_register3+8	; enable external interrupts
 	vdp_16px_vscroll:	equ vdp_mode_register3+4	; 16px column vertical scroll mode
@@ -52,18 +52,18 @@ vdp_control_port:	equ $C00004
 	vdp_1px_hscroll:	equ vdp_mode_register3+3	; 1px row horizontal scroll mode
 	vdp_8px_hscroll:	equ vdp_mode_register3+2	; 8px row horizontal scroll mode
 	vdp_full_hscroll:	equ vdp_mode_register3		; full screen horizontal scroll mode
-	
+
 	vdp_mode_register4:	equ $8C00
 	vdp_320px_screen_width:	equ vdp_mode_register4+$81	; 320px wide screen mode
 	vdp_256px_screen_width:	equ vdp_mode_register4		; 256px wide screen mode
 	vdp_shadow_highlight:	equ vdp_mode_register4+8	; enable shadow/highlight mode
 	vdp_interlace:		equ vdp_mode_register4+2	; enable interlace mode
 	vdp_interlace_x2:	equ vdp_mode_register4+6	; enable double height interlace mode (e.g. Sonic 2 two player game)
-	
+
 	vdp_hscroll_table:	equ $8D00			; horizontal scroll table setting
 	vdp_nametable_hi:	equ $8E00			; high bits of fg/bg nametable settings for 128kB VRAM
 	vdp_auto_inc:		equ $8F00			; value added to VDP address after each write
-	
+
 	vdp_plane_size:		equ $9000			; fg/bg plane dimensions
 	vdp_plane_height_128:	equ vdp_plane_size+$30		; height = 128 cells (1024px)
 	vdp_plane_height_64:	equ vdp_plane_size+$10		; height = 64 cells (512px)
@@ -71,15 +71,15 @@ vdp_control_port:	equ $C00004
 	vdp_plane_width_128:	equ vdp_plane_size+3		; width = 128 cells (1024px)
 	vdp_plane_width_64:	equ vdp_plane_size+1		; width = 64 cells (512px)
 	vdp_plane_width_32:	equ vdp_plane_size		; width = 32 cells (256px)
-	
+
 	vdp_window_x_pos:	equ $9100
 	vdp_window_right:	equ vdp_window_x_pos+$80	; draw window from x pos to right edge of screen
 	vdp_window_left:	equ vdp_window_x_pos		; draw window from x pos to left edge of screen
-	
+
 	vdp_window_y_pos:	equ $9200
 	vdp_window_bottom:	equ vdp_window_y_pos+$80	; draw window from y pos to bottom edge of screen
 	vdp_window_top:		equ vdp_window_y_pos		; draw window from y pos to top edge of screen
-	
+
 	vdp_dma_length_low:	equ $9300
 	vdp_dma_length_hi:	equ $9400
 	vdp_dma_source_low:	equ $9500
@@ -88,7 +88,7 @@ vdp_control_port:	equ $C00004
 	vdp_dma_68k_copy:	equ vdp_dma_source_hi		; DMA 68k to VRAM copy mode
 	vdp_dma_vram_fill:	equ vdp_dma_source_hi+$80	; DMA VRAM fill mode
 	vdp_dma_vram_copy:	equ vdp_dma_source_hi+$C0	; DMA VRAM to VRAM copy mode
-		
+
 vdp_counter:		equ $C00008
 psg_input:			equ $C00011
 debug_reg:			equ $C0001C
@@ -146,7 +146,7 @@ sizeof_z80_ram:		equ z80_ram_end-z80_ram			; $2000
 sizeof_z80_bank:	equ $8000				; size of switchable Z80 rom window
 
 
-; Mega CD Expansion slot 
+; Mega CD Expansion slot
 expansion:		equ $400000
 expansion_end:	equ $800000
 
@@ -186,7 +186,7 @@ sizeof_wordram_IMG:	equ	wordram_IMG_end-wordram_IMG	; MCD VRAM image of Word RAM
 mcd_control_registers:	equ $A12000 			; Mega CD gate array
 mcd_md_interrupt:	equ	mcd_control_registers		; $A12000 ; MD interrupt, triggers IRQ2 on sub CPU when set to 1
 	mcd_int_bit:	equ 0
-mcd_reset:				equ	$A12001		; $A12001 ; Sub CPU bus request and reset 
+mcd_reset:				equ	$A12001		; $A12001 ; Sub CPU bus request and reset
 	sub_reset_bit:			equ 0		; set to 0 to reset sub CPU, 1 to run
 	sub_bus_request_bit:	equ 1		; set to 1 to request sub CPU bus, 0 to return, when read, returns 1 once bus has been granted
 	sub_reset:				equ 0
@@ -197,7 +197,7 @@ mcd_mem_mode:		equ	$A12003 ; word RAM swap and program RAM bankswitch registers;
 	; 1M mode:
 	bank_assignment_bit:	equ 0	; RET; read-only; word RAM bank assignment; 0 = bank 0 main CPU and bank 1 sub CPU, 1 - bank 0 sub CPU and bank 1 main CPU
 	bank_swap_request_bit:	equ 1	; DMNA; swap word ram banks by setting to 1; returns 1 while swap is in progress and 0 once it is complete
-	; 2M mode:	
+	; 2M mode:
 	wordram_swapmain_bit:	equ 0	; RET; read-only, 0 = word RAM is assigned to sub CPU; 1 = word RAM is assigned to main CPU
 	wordram_swapsub_bit:	equ 1	; DMNA; give word RAM to sub CPU by setting to 1; returns 0 while swap is in progress and 1 once it is complete
 
@@ -205,7 +205,7 @@ mcd_mem_mode:		equ	$A12003 ; word RAM swap and program RAM bankswitch registers;
 	program_ram_bank_1:		equ 6	; program RAM bank bits, sets program RAM bank to access
 	program_ram_bank_2:		equ 7
 	program_ram_bank:		equ (1<<program_ram_bank_1)|(1<<program_ram_bank_2) ; $C0
-	
+
 mcd_cd_controller_mode:		equ	$A12004 ; CD data controller mode and destination select register
 	cd_destination:		equ 7	; bits 0-2, destination of CD data read
 	cd_dest_main:		equ	2	; main CPU read from mcd_cdc_data
@@ -213,7 +213,7 @@ mcd_cd_controller_mode:		equ	$A12004 ; CD data controller mode and destination s
 	cd_dest_pcm:		equ 4	; DMA to PCM sound source
 	cd_dest_prgram:		equ 5	; DMA to program RAM
 	cd_dest_wordram:	equ 7	; DMA to word RAM
-	
+
 	hibyte_ready_bit:	equ 5	; set when upper byte is sent from CD controller, cleared once full word is ready
 	data_ready_bit:		equ 6	; set once full word of data is ready
 	data_end_bit:		equ 7	; set once the data read is finished
@@ -330,12 +330,12 @@ waitwordram:	macro
 		cmpi.b	#$FF,(mcd_sub_flag).l	; is sub CPU OK?
 		bne.s	.ok\@					; branch if so
 		trap #0
-		
-	.ok@\:	
+
+	.ok@\:
 		btst	#wordram_swapmain_bit,(mcd_mem_mode).l	; has sub CPU given us the word RAM?
 		beq.s	.waitwordram		; if not, wait
 		endm
-		
+
 ; ---------------------------------------------------------------------------
 ; Give word RAM to the sub CPU
 ; ---------------------------------------------------------------------------
@@ -345,7 +345,7 @@ givewordram:	macro
 		cmpi.b	#$FF,(mcd_sub_flag).l	; is sub CPU OK?
 		bne.s	.ok\@					; branch if so
 		trap #0
-		
+
 	.ok@\:
 		bset	#wordram_swapsub_bit,GAMEMMODE			; give word ram to the sub CPU
 		beq.s	GiveWordRAMAccess				; wait until it is given

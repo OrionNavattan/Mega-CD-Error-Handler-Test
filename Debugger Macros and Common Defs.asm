@@ -7,12 +7,12 @@
 
 ; Debug Features
 ; Set to 1 to enable the use of debug assertions and the KDebug interface
-DebugFeatures: 		equ 1	
+DebugFeatures: 		equ 1
 
 ; Enable debugger extensions
 ; Pressing A/B/C on the exception screen can open other debuggers
 ; Pressing Start or unmapped button returns to the exception
-DebuggerExtensions:	equ 1	; Set to 1 to enable 
+DebuggerExtensions:	equ 1	; Set to 1 to enable
 
 ; ---------------------------------------------------------------
 ; Constants
@@ -113,7 +113,7 @@ disable_ints: macro
 		move #$2700,sr
 		endm
 	endc
-	
+
 ; ---------------------------------------------------------------
 ; Create assertions for debugging
 
@@ -136,7 +136,7 @@ assert:	macro	src,cond,dest
 	@skip\@:
 	endc
 	endm
-	
+
 ; ---------------------------------------------------------------
 ; Raises an error with the given message
 
@@ -319,7 +319,7 @@ KDebug: macro
 	endc
 	endm
 
-	
+
 ; ===========================================================================
 
 __ErrorMessage:	macro	string,opts
@@ -335,7 +335,7 @@ __ErrorMessage:	macro	string,opts
 			even
 		endc
 	endm
-	
+
 ; ===========================================================================
 
 __FSTRING_GenerateArgumentsCode: macro	string
@@ -392,7 +392,7 @@ __FSTRING_GenerateArgumentsCode: macro	string
 	endr
 
 	endm
-	
+
 ; ===========================================================================
 
 __FSTRING_GenerateDecodedString: macro string
@@ -415,9 +415,9 @@ __FSTRING_GenerateDecodedString: macro string
 		__type:		substr	__pos+1+1,__pos+1+1+1,\string			; .type
 
 		; Expression is an effective address (e.g. %<.w d0 hex> )
-		if "\__type">>8="."    
+		if "\__type">>8="."
 			__param:	substr	__midpos+1,__endpos-1,\string			; param
-			
+
 			; Validate format setting ("param")
 			if strlen("\__param")<1
 				__param: substr ,,"hex"			; if param is ommited, set it to "hex"
