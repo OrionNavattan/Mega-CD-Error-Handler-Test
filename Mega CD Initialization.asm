@@ -125,8 +125,8 @@ EntryPoint:
 		move.w	#$100-1,d2	; maximum time to wait for response
 	.req_bus:
 		bset	#sub_bus_request_bit,mcd_reset-mcd_mem_mode(a3)			; request the sub CPU bus
+		dbne	d2,.req_bus							; if it has not been granted, wait
 		bne.s	.reset									; branch if it has been granted
-		dbeq	d2,.req_bus							; if it has not been granted, wait
 		trap #1							; if sub CPU is unresponsive
 
 	.reset:
