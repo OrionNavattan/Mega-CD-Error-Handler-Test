@@ -22,7 +22,7 @@ backup_ram:			equ	$FE0000	; Mega CD backup RAM (only odd bytes accessible)
 backup_ram_end:		equ $FE3FFF
 
 mcd_control_registers:		equ $FFFF8000 ; aka, the gate array
-mcd_led_control:			equ	$FFFF8000 ; LED control register; BIOS use only
+led_control:			equ	$FFFF8000 ; LED control register; BIOS use only
 	red_led_bit:	equ	0 ; enable/disable red LED
 	green_led_bit:	equ	1 ; enable/disable green LED
 	red_led:		equ 1<<red_led_bit
@@ -51,72 +51,72 @@ mcd_mem_mode:		equ $FFFF8003 ; word ram mode/swap and priority mode registers; f
 
 	program_ram_bank:			equ $C0	; bits 6 and 7
 
-mcd_cdc_mode:		equ $FFFF8004	; CD data decoder mode and destination select register
+cdc_mode:		equ $FFFF8004	; CD data decoder mode and destination select register
 	cdc_destination:		equ 7	; bits 0-2, destination of CD data read
-		cdc_dest_main:			equ	2	; main CPU read from its instance of mcd_cdc_data_port
-		cdc_dest_sub:			equ 3	; sub CPU read from mcd_cdc_data_port
+		cdc_dest_main:			equ	2	; main CPU read from its instance of cdc_data_port
+		cdc_dest_sub:			equ 3	; sub CPU read from cdc_data_port
 		cdc_dest_pcm:			equ 4	; DMA to PCM waveram
 		cdc_dest_prgram:		equ 5	; DMA to program RAM
 		cdc_dest_wordram:		equ 7	; DMA to word RAM
-	cdc_dataready_bit:		equ 6	; indicates data is ready to be read from mcd_cdc_data_port
+	cdc_dataready_bit:		equ 6	; indicates data is ready to be read from cdc_data_port
 	cdc_endtrans_bit:		equ 7	; indicates all data has been transferred
 
 	;hibyte_ready_bit:	equ 5	; set when upper byte is sent from CD controller; cleared once full word is ready
 	data_ready_bit:		equ 6	; set once full word of data is ready
 	data_end_bit:		equ 7	; set once the data read is finished
 
-mcd_cdc_rs0:		equ	$FFFF8005 ; CD data decoder control registers; BIOS use only
+cdc_rs0:		equ	$FFFF8005 ; CD data decoder control registers; BIOS use only
 					; 	$FFFF0006 unused
-mcd_cdc_rs1:		equ	$FFFF8007 ; CD data decoder control registers; BIOS use only
+cdc_rs1:		equ	$FFFF8007 ; CD data decoder control registers; BIOS use only
 
-mcd_cdc_data_port:		equ	$FFFF8008 ; CD data out for sub CPU read
-mcd_cdc_dma_dest:	equ	$FFFF800A ; CDC DMA destination address
+cdc_data_port:		equ	$FFFF8008 ; CD data out for sub CPU read
+cdc_dma_dest:		equ	$FFFF800A ; CDC DMA destination address
 	; bits 0-9 used for PCM waveram
 	; bits 0-$D used for word RAM
 	; all bits used for program RAM
 mcd_stopwatch:		equ	$FFFF800C ; 12-bit timer
 
-mcd_com_flags:		equ	$FFFF800E ; Communication flags
+mcd_com_flags:		equ	$FFFF800E ; communication flags
 mcd_main_flag:		equ	mcd_com_flags ; Main CPU communication flag
 mcd_sub_flag:		equ	$FFFF800F ; Sub CPU communication flag
 
-mcd_maincoms:		equ	$FFFF8010 ; Communication from main CPU
-mcd_maincom_0:		equ	mcd_maincoms		; $FFFF8010 ; Communication command 0
-mcd_maincom_0_lo:	equ	$FFFF8011 ; Communication command 0
-mcd_maincom_1:		equ	$FFFF8012 ; Communication command 1
-mcd_maincom_1_lo:	equ	$FFFF8013 ; Communication command 1
-mcd_maincom_2:		equ $FFFF8014 ; Communication command 2
-mcd_maincom_2_lo:	equ $FFFF8015 ; Communication command 2
-mcd_maincom_3:		equ	$FFFF8016 ; Communication command 3
-mcd_maincom_3_lo:	equ $FFFF8017 ; Communication command 3
-mcd_maincom_4:		equ	$FFFF8018 ; Communication command 4
-mcd_maincom_4_lo:	equ	$FFFF8019 ; Communication command 4
-mcd_maincom_5:		equ $FFFF801A ; Communication command 5
-mcd_maincom_5_lo:	equ $FFFF801B ; Communication command 5
-mcd_maincom_6:		equ	$FFFF801C ; Communication command 6
-mcd_maincom_6_lo:	equ	$FFFF801D ; Communication command 6
-mcd_maincom_7:		equ	$FFFF801E ; Communication command 7
-mcd_maincom_7_lo:	equ	$FFFF801F ; Communication command 7
+mcd_maincoms:		equ	$FFFF8010 ; communication from main CPU
+mcd_maincom_0:		equ	mcd_maincoms		; $FFFF8010 ; communication command 0
+mcd_maincom_0_lo:	equ	$FFFF8011 ; communication command 0
+mcd_maincom_1:		equ	$FFFF8012 ; communication command 1
+mcd_maincom_1_lo:	equ	$FFFF8013 ; communication command 1
+mcd_maincom_2:		equ $FFFF8014 ; communication command 2
+mcd_maincom_2_lo:	equ $FFFF8015 ; communication command 2
+mcd_maincom_3:		equ	$FFFF8016 ; communication command 3
+mcd_maincom_3_lo:	equ $FFFF8017 ; communication command 3
+mcd_maincom_4:		equ	$FFFF8018 ; communication command 4
+mcd_maincom_4_lo:	equ	$FFFF8019 ; communication command 4
+mcd_maincom_5:		equ $FFFF801A ; communication command 5
+mcd_maincom_5_lo:	equ $FFFF801B ; communication command 5
+mcd_maincom_6:		equ	$FFFF801C ; communication command 6
+mcd_maincom_6_lo:	equ	$FFFF801D ; communication command 6
+mcd_maincom_7:		equ	$FFFF801E ; communication command 7
+mcd_maincom_7_lo:	equ	$FFFF801F ; communication command 7
 
-mcd_subcoms:		equ	$FFFF8020 ; Communication to main CPU
-mcd_subcom_0:		equ	mcd_subcoms	; $FFFF8020 ; Communication status 0
-mcd_subcom_0_lo:	equ	$FFFF8021 ; Communication status 0
-mcd_subcom_1:		equ	$FFFF8022 ; Communication status 1
-mcd_subcom_1_lo:	equ	$FFFF8023 ; Communication status 1
-mcd_subcom_2:		equ	$FFFF8024 ; Communication status 2
-mcd_subcom_2_lo:	equ $FFFF8025 ; Communication status 2
-mcd_subcom_3:		equ $FFFF8026 ; Communication status 3
-mcd_subcom_3_lo:	equ $FFFF8027 ; Communication status 3
-mcd_subcom_4:		equ	$FFFF8028 ; Communication status 4
-mcd_subcom_4_lo:	equ $FFFF8029 ; Communication status 4
-mcd_subcom_5:		equ $FFFF802A ; Communication status 5
-mcd_subcom_5_lo:	equ $FFFF802B ; Communication status 5
-mcd_subcom_6:		equ $FFFF802C ; Communication status 6
-mcd_subcom_6_lo:	equ $FFFF802D ; Communication status 6
-mcd_subcom_7:		equ $FFFF802E ; Communication status 7
-mcd_subcom_7_lo:	equ $FFFF802F ; Communication status 7
+mcd_subcoms:		equ	$FFFF8020 ; communication to main CPU
+mcd_subcom_0:		equ	mcd_subcoms	; $FFFF8020 ; communication status 0
+mcd_subcom_0_lo:	equ	$FFFF8021 ; communication status 0
+mcd_subcom_1:		equ	$FFFF8022 ; communication status 1
+mcd_subcom_1_lo:	equ	$FFFF8023 ; communication status 1
+mcd_subcom_2:		equ	$FFFF8024 ; communication status 2
+mcd_subcom_2_lo:	equ $FFFF8025 ; communication status 2
+mcd_subcom_3:		equ $FFFF8026 ; communication status 3
+mcd_subcom_3_lo:	equ $FFFF8027 ; communication status 3
+mcd_subcom_4:		equ	$FFFF8028 ; communication status 4
+mcd_subcom_4_lo:	equ $FFFF8029 ; communication status 4
+mcd_subcom_5:		equ $FFFF802A ; communication status 5
+mcd_subcom_5_lo:	equ $FFFF802B ; communication status 5
+mcd_subcom_6:		equ $FFFF802C ; communication status 6
+mcd_subcom_6_lo:	equ $FFFF802D ; communication status 6
+mcd_subcom_7:		equ $FFFF802E ; communication status 7
+mcd_subcom_7_lo:	equ $FFFF802F ; communication status 7
 
-mcd_timer_interrupt:	equ	$FFFF8031 ; IRQ 3 timer; counts down from the 8-bit value written to this register, triggers IRQ 3 when it reaches 0; generally used for PCM driver timing
+mcd_timerint_interval:	equ	$FFFF8031 ; IRQ 3 timer; counts down from the 8-bit value written to this register, triggers IRQ 3 when it reaches 0; generally used for PCM driver timing
 
 mcd_interrupt_control:	equ	$FFFF8033 	; enable/disable triggering of interrupts (NOT the same as the interrupts in the 68K status register)
 	; WARNING: when BIOS is in use, ONLY graphics_done_int and timer_int are user-configurable.
@@ -126,36 +126,36 @@ mcd_interrupt_control:	equ	$FFFF8033 	; enable/disable triggering of interrupts 
 
 	graphics_done_int:	equ 1	; triggered when a graphics operation completes (only while wordram is in 2M mode)
 	sub_vblank_int:		equ 2	; interrupt triggered by main CPU, generally on VBlank
-	timer_int:			equ 3	; triggered when timer set in mcd_timer_interrupt reaches 0
+	timer_int:			equ 3	; triggered when timer set in mcd_timerint_interval reaches 0
 	cdd_int:			equ 4	; triggered by CD drive when reception of receiving status 7 is complete; used to manage processing of CD drive commands
 	cdc_int:			equ 5	; triggered by CD data controller when error correction is finished
 	subcode_int:		equ 6	; triggered when 98 byte buffering of subcode is complete
 
 ; CD Drive control registers; BIOS use only
-mcd_cdd_fader:	equ	$FFFF8034 	; CD drive fader control/spindle speed register
-mcd_cdd_type:	equ	$FFFF8036 	; CD drive data type
-mcd_cdd_ctrl:	equ	$FFFF8037 	; CD drive control register
-mcd_cdd_communication:	equ	$FFFF8038 	; CD drive communication registers
-mcd_cdd_status_0:	equ	mcd_cdd_status_0 	; CDD receive status 0
-mcd_cdd_status_1:	equ	$FFFF8039 	; CDD receive status 1
-mcd_cdd_status_2:	equ	$FFFF803A 	; CDD receive status 2
-mcd_cdd_status_3:	equ	$FFFF803B 	; CDD receive status 3
-mcd_cdd_status_4:	equ	$FFFF803C 	; CDD receive status 4
-mcd_cdd_status_5:	equ	$FFFF3803D 	; CDD receive status 5
-mcd_cdd_status_6:	equ	$FFFF803E 	; CDD receive status 6
-mcd_cdd_status_7:	equ	$FFFF803F 	; CDD receive status 7
-mcd_cdd_status_8:	equ	$FFFF8040 	; CDD receive status 8
-mcd_cdd_status_9:	equ	$FFFF8041 	; CDD receive status 9
-mcd_cdd_cmd_0:	equ	$FFFF8042 	; CDD transfer command 0
-mcd_cdd_cmd_1:	equ	$FFFF8043 	; CDD transfer command 1
-mcd_cdd_cmd_2:	equ	$FFFF8044 	; CDD transfer command 2
-mcd_cdd_cmd_3:	equ	$FFFF8045 	; CDD transfer command 3
-mcd_cdd_cmd_4:	equ	$FFFF8046 	; CDD transfer command 4
-mcd_cdd_cmd_5:	equ	$FFFF8047 	; CDD transfer command 5
-mcd_cdd_cmd_6:	equ	$FFFF8048 	; CDD transfer command 6
-mcd_cdd_cmd_7:	equ	$FFFF8049 	; CDD transfer command 7
-mcd_cdd_cmd_8:	equ	$FFFF804A 	; CDD transfer command 8
-mcd_cdd_cmd_9:	equ	$FFFF804B 	; CDD transfer command 9
+cdd_fader:	equ	$FFFF8034 	; CD drive fader control/spindle speed register
+cdd_type:	equ	$FFFF8036 	; CD drive data type
+cdd_ctrl:	equ	$FFFF8037 	; CD drive control register
+cdd_communication:	equ	$FFFF8038 	; CD drive communication registers
+cdd_status_0:	equ	cdd_status_0 	; CDD receive status 0
+cdd_status_1:	equ	$FFFF8039 	; CDD receive status 1
+cdd_status_2:	equ	$FFFF803A 	; CDD receive status 2
+cdd_status_3:	equ	$FFFF803B 	; CDD receive status 3
+cdd_status_4:	equ	$FFFF803C 	; CDD receive status 4
+cdd_status_5:	equ	$FFFF3803D 	; CDD receive status 5
+cdd_status_6:	equ	$FFFF803E 	; CDD receive status 6
+cdd_status_7:	equ	$FFFF803F 	; CDD receive status 7
+cdd_status_8:	equ	$FFFF8040 	; CDD receive status 8
+cdd_status_9:	equ	$FFFF8041 	; CDD receive status 9
+cdd_cmd_0:	equ	$FFFF8042 	; CDD transfer command 0
+cdd_cmd_1:	equ	$FFFF8043 	; CDD transfer command 1
+cdd_cmd_2:	equ	$FFFF8044 	; CDD transfer command 2
+cdd_cmd_3:	equ	$FFFF8045 	; CDD transfer command 3
+cdd_cmd_4:	equ	$FFFF8046 	; CDD transfer command 4
+cdd_cmd_5:	equ	$FFFF8047 	; CDD transfer command 5
+cdd_cmd_6:	equ	$FFFF8048 	; CDD transfer command 6
+cdd_cmd_7:	equ	$FFFF8049 	; CDD transfer command 7
+cdd_cmd_8:	equ	$FFFF804A 	; CDD transfer command 8
+cdd_cmd_9:	equ	$FFFF804B 	; CDD transfer command 9
 
 ; Font generator registers
 gfx_fontgen_color:	equ	$FFFF804C ; font color (only low byte is used, so could be written with byte operation at $FF840D)
@@ -195,9 +195,9 @@ gfx_img_vsize: 	equ	$FFFF8064 	; image buffer height in pixels, maximum 255 pixe
 gfx_tracetbl:	equ	$FFFF8066 	; start address of trace vector table;  same restrictions on location apply as with stampmaps (writing this also triggers the start of a graphics operation)
 
 ; Subcode registers; BIOS use only
-mcd_subcode_addr:	equ	$FFFF8068 	; subcode top address
+subcode_addr:	equ	$FFFF8068 	; subcode top address
 mcd_subcode:		equ	$FFFF8100 	; 64 word subcode buffer
-mcd_subcode_mirror:	equ	$FFFF8108  	; mirror of subcode buffer
+subcode_mirror:	equ	$FFFF8108  	; mirror of subcode buffer
 
 ; -------------------------------------------------------------------------
 ; BIOS status flags and jump table
@@ -400,7 +400,7 @@ DecoderStartP:		equ	$88 ; CDCSTARTP
 DecoderStop:		equ	$89	; CDCSTOP; terminate read and discard current sector
 DecoderStatus:		equ	$8A	; CDCSTAT; check if data is ready
 DecoderRead:		equ	$8B ; CDCREAD; if data is ready, prepare to read one frame
-DecoderTransfer:	equ	$8C ; CDCTRN; transfer data from mcd_cdc_data_port to a location in the Sub CPU's address space
+DecoderTransfer:	equ	$8C ; CDCTRN; transfer data from cdc_data_port to a location in the Sub CPU's address space
 DecoderAck:			equ	$8D	; CDCACK; let the decoder know we are done reading a frame
 
 ; Subcode commands
