@@ -1,5 +1,5 @@
 ; ---------------------------------------------------------------------------
-; Standard Mega Drive 68K hardware addresses, constants & function macros
+; Standard Mega Drive 68K hardware addresses and constants
 ; ---------------------------------------------------------------------------
 
 ; VDP addressses
@@ -146,7 +146,10 @@ sizeof_z80_ram:		equ z80_ram_end-z80_ram			; $2000
 sizeof_z80_bank:	equ $8000				; size of switchable Z80 rom window
 
 
-; Mega CD Expansion slot
+; ---------------------------------------------------------------------------
+; Mega CD main CPU addresses and constants
+; ---------------------------------------------------------------------------
+
 expansion:		equ $400000
 expansion_end:	equ $800000
 

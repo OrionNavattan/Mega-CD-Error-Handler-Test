@@ -769,7 +769,7 @@ SubCPUError:
 
 	.waitsubbus:
 		bset	#sub_bus_request_bit,(mcd_reset).l			; request the sub CPU bus
-		beq.s	.waitsubbus									; branch if it has been granted
+		beq.s	.waitsubbus									; branch if it has not been granted
 
 		lea	-sizeof_Console_RAM(sp),sp		; allocate memory for console on main CPU stack
 		jsr	ErrorHandler_SetupVDP(pc)
@@ -969,7 +969,7 @@ ErrorHandler:
 .waitsubbus:
 		; Halt the Sub CPU
 		bset	#sub_bus_request_bit,(mcd_reset).l			; request the sub CPU bus
-		beq.s	.waitsubbus									; branch if it has been granted
+		beq.s	.waitsubbus									; branch if it has not been granted
 
 		jsr	ErrorHandler_SetupVDP(pc)
 		lea sizeof_dumpedregs+sizeof_Console_RAM(sp),a4	; a4 = arguments, stack frame

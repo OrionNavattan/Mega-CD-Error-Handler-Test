@@ -51,15 +51,17 @@ mcd_mem_mode:		equ $FFFF8003 ; word ram mode/swap and priority mode registers; f
 
 	program_ram_bank:			equ $C0	; bits 6 and 7
 
-mcd_cd_controller_mode:		equ $FFFF8004	; CD data decoder mode and destination select register
-	cd_destination:		equ 7	; bits 0-2, destination of CD data read
-		cd_dest_main:		equ	2	; main CPU read from its instance of mcd_cdc_data
-		cd_dest_sub:		equ 3	; sub CPU read from mcd_cdc_data
-		cd_dest_pcm:		equ 4	; DMA to PCM waveram
-		cd_dest_prgram:		equ 5	; DMA to program RAM
-		cd_dest_wordram:	equ 7	; DMA to word RAM
+mcd_cdc_mode:		equ $FFFF8004	; CD data decoder mode and destination select register
+	cdc_destination:		equ 7	; bits 0-2, destination of CD data read
+		cdc_dest_main:			equ	2	; main CPU read from its instance of mcd_cdc_data_port
+		cdc_dest_sub:			equ 3	; sub CPU read from mcd_cdc_data_port
+		cdc_dest_pcm:			equ 4	; DMA to PCM waveram
+		cdc_dest_prgram:		equ 5	; DMA to program RAM
+		cdc_dest_wordram:		equ 7	; DMA to word RAM
+	cdc_dataready_bit:		equ 6	; indicates data is ready to be read from mcd_cdc_data_port
+	cdc_endtrans_bit:		equ 7	; indicates all data has been transferred
 
-	hibyte_ready_bit:	equ 5	; set when upper byte is sent from CD controller; cleared once full word is ready
+	;hibyte_ready_bit:	equ 5	; set when upper byte is sent from CD controller; cleared once full word is ready
 	data_ready_bit:		equ 6	; set once full word of data is ready
 	data_end_bit:		equ 7	; set once the data read is finished
 
@@ -67,7 +69,7 @@ mcd_cdc_rs0:		equ	$FFFF8005 ; CD data decoder control registers; BIOS use only
 					; 	$FFFF0006 unused
 mcd_cdc_rs1:		equ	$FFFF8007 ; CD data decoder control registers; BIOS use only
 
-mcd_cdc_data:		equ	$FFFF8008 ; CD data out for sub CPU read
+mcd_cdc_data_port:		equ	$FFFF8008 ; CD data out for sub CPU read
 mcd_cdc_dma_dest:	equ	$FFFF800A ; CDC DMA destination address
 	; bits 0-9 used for PCM waveram
 	; bits 0-$D used for word RAM
@@ -164,7 +166,10 @@ gfx_fontgen_in:		equ	$FFFF804E 	; font source bitmap input
 gfx_fontgen_out:	equ	$FFFF8050 	; finished font data, 8 bytes
 
 ; Graphics operation control registers
-gfx_stampsize:	equ	$FFFF8058 	; stamp size/Map size
+gfx_op_flag:	equ $FFFF8058
+	gfx_op_bit:	equ 7	; set if a gfx op is in progress
+	gfx_op:		equ 1<<gfx_op_bit
+gfx_stampsize:	equ	$FFFF8059 	; stamp size/Map size
 	stampmap_repeat_bit:	equ 0 ; 0 = repeat when end of map is reached, 1 = 0 data beyond map size is rendered as blank pixels
 	stamp_size_bit:			equ 1 ; 0 = 16x16 pixels, 1 = 32x32 pixels
 	stampmap_size_bit:		equ 2 ; 0 = 1x1 screen (256x256 pixels), 1 = 16x16 screen (4096x4096 pixels)
@@ -201,14 +206,85 @@ mcd_subcode_mirror:	equ	$FFFF8108  	; mirror of subcode buffer
 _SubCPUStack:	equ $5E80 ; sub CPU initial stack pointer
 
 ; BIOS status table and flags
-_BIOSStatus:	equ	$5E80	; _CDSTAT; CD BIOS status; after calling the BIOSStatus function, contains information on what the BIOS and CD drive are currently doing
+; _BIOSStatus, _LEDStatus, and _CDStatus are updated by calling the BIOSStatus function
+_BIOSStatus:	equ	$5E80	; _CDSTAT; CD BIOS status
+_DriveInitStatus:	equ _BIOSStatus
+	drive_ready_bit:	equ 7	; 0 = drive ready; 1 = drive busy
+	tray_open_bit:	equ 6	; 1 = tray/door open
+	toc_read_bit:	equ 5	; 1 = drive is reading disc TOC
+	no_disc_bit:	equ 4	; 1 = no disc in drive
+	drive_ready:	equ 1<<drive_ready_bit
+	tray_open:		equ 1<<tray_open_bit
+	toc_read:		equ 1<<toc_read_bit
+	no_disc:		equ 1<<no_disc_bit
+	toc_done:		equ 0
+
+_CDDAStatus:	equ _BIOSStatus
+	cdda_seek_bit:	equ 3	; 1 = drive is set to play CDDA in seek mode (i.e., set to stop at a specific track)
+	cdda_pause_bit:	equ 2	; 1 = CDDA is paused
+	cdda_scan_bit:	equ 1	; 1 = CDDA is scanning (i.e., fast forwarding or rewinding)
+	disc_read_bit:	equ 0	; 1 = drive is reading disc (both playing red book CDDA and yellow book CD-ROM data)
+	cdda_seek:		equ 1<<cdda_seek_bit
+	cdda_pause:		equ 1<<cdda_pause_bit
+	cdda_scan:		equ 1<<cdda_scan_bit
+	disc_read:		equ 1<<disc_read_bit
+
+_CDDataStatus:		equ _BIOSStatus+1	; $5E81
+	data_seek_bit:	equ 3	; 1 = drive is set to read beginning at a specific logical sector
+	data_pause_bit:	equ 2	; 1 = data read is paused
+	data_read_bit:	equ 0	; 1 = drive is reading yellow book CD-ROM data
+	data_seek:		equ 1<<data_seek_bit
+	data_pause:		equ 1<<data_pause_bit
+	data_read:		equ 1<<data_read_bit
+
+_LEDStatus:		equ $5E82	; LED; indicates current status of front panel LEDs
+	power_led_bit:	equ 9	; 1 = power LED (green; Model 1 only) is on
+	access_led_bit:	equ 8	; 1 = access LED (green on WonderMega/XEye, red on all other devices) is on
+	led_mode:		equ	$FF	; indicates current LED blink mode
+		; Following values are also used to temporarily override system LED control using the LEDSet BIOS call
+		led_ready:	equ 0	; power on, access flashing; CD ready and no disc
+		led_discin:	equ 1	; power on, access off; CD ready and disc OK
+		led_access:	equ 2	; both on; CD access
+		led_standby:equ 3	; power flashing, access off; standby mode
+		led_error:	equ 4	; both flashing
+		led_mode5:	equ 5	; power flashing, access on
+		led_mode6:	equ 6	; power off, access flashing
+		led_mode7:	equ 7 	; power off, access on
+		led_system:	equ $FFFFFFFF	; return LEDs to system control
+
+_CDDStatus:			equ	$5E84 	; $20 bytes, contains information on the CD drive, the current disc, and CDDA playback status
+	CDD_Status_Code:	equ 0
+	CDD_Report_Code:	equ 1
+	CDD_Disc_Control:	equ 2
+	CDD_CurrentTrack:	equ 3 ; current CDDA track
+	CDD_Abs_Time:		equ 4 ; 4 bytes, absolute time of disc in BCD
+	CDD_Rel_Time:		equ 8 ; 4 bytes, relative time of disc in BCD
+	CDD_FirstTrack:		equ $C	; first CDDA track number
+	CDD_LastTrack:		equ $D ; last CDDA track number
+	CDD_DriveVersion:	equ $E
+	CDD_StatusFlags:	equ $F
+		cdd_data_bit:		equ 2 ; 1 = reading yellow book data, 0 = reading CDDA
+		cdd_emphasis_bit:	equ 1 ; 1 = emphasis 1
+		cdd_mute_bit:		equ 0 ; 1 = mute on
+		cdd_data:		equ 1<<cdd_data_bit
+		cdd_emphasis:	equ 1<<cdd_emphasis_bit
+		cdd_mute:		equ 1<<cdd_mute_bit
+	CDD_StartTime:		equ $10	; 4 bytes, start time of read out area
+
+_CDVolume:		equ $5E98
+	cd_mastervol:	equ $FFFF0000	; bits 16-31; master volume
+	cd_vol:			equ $FFF0	; bits 4-15
+	cd_volemph:		equ $F	; emphasis enable flag
+
+_CDFrameHeader:		equ $5E9C	; time written in frame with proceeds current data
+
 _BootStatus:	equ	$5EA0	; boot system status
 _UserMode:		equ	$5EA6	; system program return code
 
 ; BIOS call entry points
 _SetJmpTbl:		equ	$5F0A	; set up the jump table for a new sub CPU user program
 _WaitForVBlank:	equ	$5F10	; _WAITVSYNC; wait for next MDInt
-_BackupRAM:		equ	$5F16	; backup RAM function entry
+_BackupRAM:		equ	$5F16	; _BURAM: backup RAM function entry
 _CDBoot:		equ	$5F1C	; CD boot function entry
 _CDBIOS:		equ	$5F22	; CD BIOS function entry
 
@@ -312,21 +388,19 @@ FaderChg:			equ	$86 ; FDRGHG; change CD audio volume at a specified speed
 DriveOpen:	equ	$A	; DRVOPEN; open the disc tray if an MCD Model 1 or Pioneer LaserActive (Mega LD), otherwise wait for user to open drive door
 DriveInit:	equ	$10	; DRVINIT; close the disc tray if an MCD Model 1 or Pioneer LaserActive, and check for disc; if found, get TOC data and optionally start playing music automatically
 
-; CD data read commands
+; CD data read/decoder commands
 ROMPauseOn:		equ	8	; ROMPAUSEON; pause a CD data read
 ROMPauseOff:	equ	9	; ROMPAUSEOFF; resume CD data read
 ROMRead:		equ	$17 ; ROMREAD; begin CD data read from a specific logical sector
 ROMSeek:		equ	$18	; ROMSEEK; stop CD data read at a specific logical sector
 ROMReadNum:		equ	$20 ; ROMREADN; begin CD data read at a specific logical sector and read a specific number of sectors
 ROMReadBetween:	equ	$21	; ROMREADE; perform CD data read between two designated logical sectors
-
-; CD data decoder commands
 DecoderStart:		equ	$87	; CDCSTART: begin data readout from current logical sector
 DecoderStartP:		equ	$88 ; CDCSTARTP
 DecoderStop:		equ	$89	; CDCSTOP; terminate read and discard current sector
 DecoderStatus:		equ	$8A	; CDCSTAT; check if data is ready
 DecoderRead:		equ	$8B ; CDCREAD; if data is ready, prepare to read one frame
-DecoderTransfer:	equ	$8C ; CDCTRN; transfer data from mcd_cdc_data to a location in the Sub CPU's address space
+DecoderTransfer:	equ	$8C ; CDCTRN; transfer data from mcd_cdc_data_port to a location in the Sub CPU's address space
 DecoderAck:			equ	$8D	; CDCACK; let the decoder know we are done reading a frame
 
 ; Subcode commands
