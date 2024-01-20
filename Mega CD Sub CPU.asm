@@ -1,5 +1,5 @@
 ; ---------------------------------------------------------------------------
-; Mega CD Sub CPU hardware addresses, entry points, and BIOS Functions
+; Mega CD Sub CPU hardware addresses, entry points, and BIOS functions
 
 ; Many have been renamed from the "official" names from the sake of clarity
 ; and readability. Wherever the name has changed beyond moving away from
@@ -336,8 +336,8 @@ _Trap15:		equ	$5FFA
 ; BIOS function calls
 
 ; Except for the boot and BURAM commands, these are used with the _CDBIOS
-; entry point. Command IDs below $80 are executed in full on the spot;
-; command IDs $80 and above are queued and executed during CDD, CDC, and
+; entry point. Command IDs above $80 are executed in full on the spot;
+; command IDs below $80 are queued and executed during CDD, CDC, and
 ; subcode interrupts.
 
 ; The descriptions are intended as an at-a-glace summary. See the MEGA CD
